@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "types": ["vite/client", "node"],
+    "paths": {
+      "pricesim": ["../src/index.ts"],
+      "pricesim/units": ["../src/core/units.ts"],
+      "pricesim/expr": ["../src/core/expr.ts"],
+      "pricesim/model": ["../src/model/index.ts"],
+      "pricesim/workload": ["../src/workload/index.ts"],
+      "pricesim/eval": ["../src/eval/index.ts"],
+      "pricesim/aws": ["../src/catalog/aws/index.ts"],
+      "pricesim/aws/*": ["../src/catalog/aws/*.ts"],
+      "mathjs": ["./node_modules/mathjs"]
+    }
+  },
+  "include": ["src", "dev", "vite.config.ts"]
+}

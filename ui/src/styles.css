@@ -1,0 +1,534 @@
+/* Scoped to .pm-sim so the simulator can be mounted into another page without leaking styles. */
+.pm-sim {
+  color-scheme: light;
+  --surface-0: #f4f4f2;
+  --surface-1: #fcfcfb;
+  --surface-2: #efeeea;
+  --border: #dddcd6;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #85847f;
+  --accent: #2a78d6;
+  --good: #12805c;
+  --bad: #c73a39;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #4a3aa7;
+  --series-8: #e34948;
+  --series-other: #a3a29c;
+  --used: var(--series-1);
+  --idle: #b9b8b1;
+  --fixed: var(--series-7);
+
+  font:
+    13px/1.45 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  color: var(--text-primary);
+  background: var(--surface-0);
+  min-height: 100%;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) .pm-sim {
+    color-scheme: dark;
+    --surface-0: #121211;
+    --surface-1: #1a1a19;
+    --surface-2: #252523;
+    --border: #353532;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8d8c85;
+    --accent: #3987e5;
+    --good: #3fb68b;
+    --bad: #e66767;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
+    --series-other: #6f6e69;
+    --idle: #5c5b57;
+  }
+}
+:root[data-theme='dark'] .pm-sim {
+  color-scheme: dark;
+  --surface-0: #121211;
+  --surface-1: #1a1a19;
+  --surface-2: #252523;
+  --border: #353532;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8d8c85;
+  --accent: #3987e5;
+  --good: #3fb68b;
+  --bad: #e66767;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+  --series-other: #6f6e69;
+  --idle: #5c5b57;
+}
+
+.pm-sim *,
+.pm-sim *::before,
+.pm-sim *::after {
+  box-sizing: border-box;
+}
+.pm-sim h2 {
+  font-size: 14px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.pm-sim h3 {
+  font-size: 12px;
+  margin: 12px 0 6px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pm-sim button,
+.pm-sim select,
+.pm-sim input {
+  font: inherit;
+  color: inherit;
+}
+.pm-sim button {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.pm-sim button:hover {
+  border-color: var(--text-muted);
+}
+.pm-sim button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.pm-sim button.link {
+  border: none;
+  background: none;
+  padding: 0 4px;
+  color: var(--accent);
+}
+.pm-sim select,
+.pm-sim input[type='text'],
+.pm-sim input[type='number'] {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 6px;
+}
+.pm-sim .muted {
+  color: var(--text-muted);
+}
+.pm-sim .secondary {
+  color: var(--text-secondary);
+}
+.pm-sim .error {
+  color: var(--bad);
+  white-space: pre-wrap;
+}
+.pm-sim .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pm-sim .good {
+  color: var(--good);
+}
+.pm-sim .bad {
+  color: var(--bad);
+}
+
+/* ---------- layout ---------- */
+.pm-sim .topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.pm-sim .topbar .title {
+  font-weight: 700;
+  font-size: 15px;
+}
+.pm-sim .tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 2px;
+}
+.pm-sim .tabs button {
+  border: none;
+  background: none;
+  border-radius: 6px;
+}
+.pm-sim .tabs button.active {
+  background: var(--surface-1);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+}
+.pm-sim .status {
+  margin-left: auto;
+  font-size: 12px;
+}
+.pm-sim .explore {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  align-items: start;
+}
+.pm-sim .sidebar {
+  position: sticky;
+  top: 49px;
+  max-height: calc(100vh - 49px);
+  min-height: calc(100vh - 49px);
+  overflow: auto;
+  padding: 12px 16px 24px;
+  border-right: 1px solid var(--border);
+  background: var(--surface-1);
+}
+.pm-sim .main {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.pm-sim .card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+.pm-sim .row2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .pm-sim .explore {
+    grid-template-columns: 1fr;
+  }
+  .pm-sim .sidebar {
+    position: static;
+    max-height: none;
+    min-height: 0;
+    border-right: none;
+  }
+  .pm-sim .row2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- KPI tiles ---------- */
+.pm-sim .tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.pm-sim .tile {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.pm-sim .tile .label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pm-sim .tile .value {
+  font-size: 22px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.pm-sim .tile .sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.pm-sim .swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+.pm-sim .splitbar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  margin-top: 4px;
+}
+.pm-sim .splitbar > div {
+  border-radius: 3px;
+  min-width: 2px;
+}
+
+/* ---------- tables ---------- */
+.pm-sim table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.pm-sim th,
+.pm-sim td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+.pm-sim th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 12px;
+  position: sticky;
+  top: 0;
+  background: var(--surface-1);
+}
+.pm-sim .scroll {
+  max-height: 420px;
+  overflow: auto;
+}
+.pm-sim .sharebar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--used);
+  min-width: 1px;
+}
+.pm-sim .sharecell {
+  width: 90px;
+}
+
+/* ---------- cost tree ---------- */
+.pm-sim .tree {
+  font-size: 12.5px;
+}
+.pm-sim .tree .node {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px 60px 70px;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: default;
+}
+.pm-sim .tree .node:hover {
+  background: var(--surface-2);
+}
+.pm-sim .tree .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pm-sim .tree .toggle {
+  display: inline-block;
+  width: 14px;
+  cursor: pointer;
+  color: var(--text-muted);
+  user-select: none;
+}
+.pm-sim .kind {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+  margin-left: 6px;
+}
+
+/* ---------- treemap ---------- */
+.pm-sim .treemap svg {
+  display: block;
+  width: 100%;
+}
+.pm-sim .treemap rect.tile {
+  stroke: var(--surface-1);
+  stroke-width: 2px;
+  cursor: pointer;
+}
+.pm-sim .treemap rect.tile:hover {
+  opacity: 0.85;
+}
+.pm-sim .treemap text {
+  font-size: 11px;
+  fill: #fff;
+  paint-order: stroke;
+  stroke: rgb(0 0 0 / 0.35);
+  stroke-width: 2px;
+  pointer-events: none;
+}
+.pm-sim .treemap text.group {
+  font-weight: 650;
+}
+.pm-sim .crumbs button {
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--accent);
+}
+
+/* ---------- controls ---------- */
+.pm-sim .control {
+  padding: 6px 0 8px;
+  border-bottom: 1px solid var(--surface-2);
+}
+.pm-sim .control .head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.pm-sim .control .head .name {
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pm-sim .control .head .val {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pm-sim .control.changed .head .val {
+  color: var(--accent);
+  font-weight: 600;
+}
+.pm-sim .control .inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.pm-sim .control input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+.pm-sim .control input[type='text'] {
+  width: 96px;
+  text-align: right;
+}
+.pm-sim .control .note {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- pools ---------- */
+.pm-sim .pools {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.pm-sim .pool {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.pm-sim .pool .count {
+  font-size: 20px;
+  font-weight: 650;
+}
+.pm-sim .util {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) 44px;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  margin-top: 3px;
+}
+.pm-sim .util .track {
+  position: relative;
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.pm-sim .util .peak {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--used);
+  opacity: 0.35;
+}
+.pm-sim .util .mean {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--used);
+}
+.pm-sim .util.binding .name {
+  font-weight: 650;
+}
+
+/* ---------- compare / sweep ---------- */
+.pm-sim .page {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pm-sim .picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.pm-sim .picker label {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.pm-sim .legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pm-sim .legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pm-sim .form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: end;
+}
+.pm-sim .form label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pm-sim .form input[type='text'] {
+  width: 110px;
+}
+.pm-sim .chart .u-legend {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pm-sim .chart .u-axis {
+  color: var(--text-secondary);
+}

@@ -98,7 +98,7 @@ pnpm unlink pricesim             # back to the pinned version
 
 ### Releases
 
-`pnpm release:patch` (or `release:minor`) runs the checks, bumps `package.json`, tags `vX.Y.Z` and pushes. The tag triggers `.github/workflows/release.yml`, which checks again, publishes to npm (trusted publishing: GitHub's OIDC token, no npm token; provenance attached) and creates a GitHub release.
+`pnpm release:patch` (or `release:minor`) runs the checks, bumps `package.json`, tags `vX.Y.Z` and pushes. The tag triggers `.github/workflows/release.yml`, which checks again, **stages** the version on npm (trusted publishing: GitHub's OIDC token, no npm token) and creates a GitHub release. The version goes live when you approve it: `pnpm release:approve` lists staged versions, then `npm stage approve <stage-id>` (asks for 2FA). A compromised repo or workflow can stage a version but can't publish one.
 
 - **Packing is pnpm's job:** the repo's `exports` and `bin` point at the TypeScript sources (so the repo, `pnpm link` and git dependencies need no build), and `publishConfig` swaps in the compiled `dist/` when pnpm packs. The workflow publishes that tarball with npm. To publish by hand, use `pnpm publish` (it runs the checks and the build first), never plain `npm publish` from the repo.
 - The compiled CLI runs on plain Node and loads TypeScript model files with tsx's loader. CI packs the tarball, installs it with npm and runs the example.

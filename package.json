@@ -35,7 +35,8 @@
     "release:minor": "pnpm check && npm version minor -m \"v%s\" && git push --follow-tags",
     "example": "tsx templates/example/report.ts",
     "build": "tsx scripts/build.ts",
-    "prepublishOnly": "pnpm check && pnpm build"
+    "prepublishOnly": "pnpm check && pnpm build",
+    "release:approve": "npm stage list pricesim && echo \"approve with: npm stage approve <stage-id>\""
   },
   "dependencies": {
     "mathjs": "^15.0.0",

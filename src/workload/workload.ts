@@ -5,7 +5,7 @@ import type { Mul } from '../core/dim.ts'
 import { u } from '../core/units.ts'
 import type { Callable, GaugeExprs } from '../model/node.ts'
 import type { AttrExprs, GaugeDef, RequestDef } from '../model/request.ts'
-import type { Dist } from './dist.ts'
+import { isDist, type Dist } from './dist.ts'
 import type { PeakSpec } from './peak.ts'
 import type { Series } from './series.ts'
 import { doc, docs } from '../docs/registry.ts'
@@ -147,6 +147,31 @@ export interface Workload {
   readonly seed: number
 }
 
+/**
+ * Rates and distribution attributes evaluated under the workload's params, so a `param(…)` inside a series or
+ * distribution follows `params` (series and distributions are built eagerly, with each param's default).
+ */
+export const resolveLoads = (requests: Workload['requests'], params: Workload['params']): Workload['requests'] =>
+  Object.fromEntries(
+    Object.entries(requests).map(([n, l]) => [
+      n,
+      l && {
+        ...l,
+        rate: l.rate.resolve ? l.rate.resolve(params) : l.rate,
+        attrs: Object.fromEntries(Object.entries(l.attrs).map(([k, v]) => [k, isDist(v) ? v.resolve(params) : v])),
+      },
+    ]),
+  ) as Workload['requests']
+
+doc({
+  name: 'resolveLoads',
+  kind: 'function',
+  module: 'pricesim',
+  summary: "A workload's rate series and distribution attributes re-evaluated under a set of params.",
+  signature: 'resolveLoads(requests: Workload["requests"], params: Workload["params"]): Workload["requests"]',
+  internal: true,
+})
+
 /** Define a workload against a root node; request names, attributes and gauges are type-checked. */
 export const workload = <R extends Record<string, RequestDef<any>>, G extends Record<string, GaugeDef>>(
   _root: Callable<R, G>,
@@ -158,7 +183,7 @@ export const workload = <R extends Record<string, RequestDef<any>>, G extends Re
   return {
     periodSeconds,
     stepSeconds,
-    requests: spec.requests as Workload['requests'],
+    requests: resolveLoads(spec.requests as Workload['requests'], spec.params ?? {}),
     gauges: (typeof spec.gauges === 'function'
       ? spec.gauges({
           rate: Object.fromEntries(Object.keys(spec.requests).map((n) => [n, meanRate(n)])) as MeanRates<R>,
@@ -232,7 +257,7 @@ doc({
 - **Derived gauges:** write levels as a function of \`rate\` (e.g. \`rate.put × bytes per put × retention\`, or \`retained(…)\`) so they follow rate changes in \`sweep\`/\`capacity\` and stay symbolic in \`closedForm\`. A fixed number does not move when you sweep the rate.
 - A level that references \`time\`/\`elapsed\` is evaluated at every step: billing uses the average, pools are sized on the peak step (usually the end of the period).
 - **Distributions:** for an attribute given as \`dist.*\`, each of \`samples\` draws carries 1/samples of the requests, so non-linear bodies (\`ceil(bytes / 1 KB)\`) are costed per draw, not at the mean. Results are reproducible for a given \`seed\`.
-- Rate series and attribute values are evaluated when built, so they can't depend on \`params\`.`,
+- A \`param(…)\` inside a rate series or a \`dist.*\` attribute follows \`params\` (and sweeps of that param): the workload re-evaluates them under its params.`,
   examples: [
     `import { bill, dimension, gauge, q, request, retained, series, service, u, workload } from 'pricesim'
 

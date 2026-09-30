@@ -1,6 +1,6 @@
 // Time series for workload rates (DESIGN.md §7). A series maps a time (seconds from period start) to a
 // value in base units.
-import type { Expr } from '../core/expr.ts'
+import type { Bindings, Expr } from '../core/expr.ts'
 import { doc } from '../docs/registry.ts'
 
 export interface Series<D> {
@@ -8,31 +8,49 @@ export interface Series<D> {
   readonly __dim?: (d: D) => D
   readonly describe: string
   at(tSeconds: number): number
+  /**
+   * The same series with its expressions evaluated under `bindings` (the workload's params). `workload()` and
+   * sweeps call it, so a `param(…)` in a series follows the workload's `params`.
+   */
+  readonly resolve?: (bindings: Bindings) => Series<D>
+}
+
+/** A series whose values come from expressions: built with no bindings, re-built by `resolve`. */
+const resolvable = <D>(build: (b: Bindings) => { describe: string; at: (t: number) => number }): Series<D> => {
+  const make = (b: Bindings): Series<D> => ({ ...build(b), resolve: make })
+  return make({})
 }
 
 export const series = {
-  constant: <D>(value: Expr<D>): Series<D> => {
-    const v = value.eval()
-    return { describe: `constant(${v})`, at: () => v }
-  },
+  constant: <D>(value: Expr<D>): Series<D> =>
+    resolvable((b) => {
+      const v = value.eval(b)
+      return { describe: `constant(${v})`, at: () => v }
+    }),
   /**
    * Daily sine wave with the given mean; peak = mean × peakToMean (1 ≤ peakToMean ≤ 2 keeps it non-negative).
    * The peak is at `peakHour` (UTC hour of day).
    */
   diurnal: <D>(opts: { mean: Expr<D>; peakToMean: number; peakHour?: number }): Series<D> => {
-    const mean = opts.mean.eval()
     const amp = opts.peakToMean - 1
     if (amp < 0 || amp > 1) throw new Error('diurnal: peakToMean must be between 1 and 2')
     const peakHour = opts.peakHour ?? 18
-    return {
-      describe: `diurnal(mean=${mean}, peakToMean=${opts.peakToMean})`,
-      at: (t) => mean * (1 + amp * Math.cos((2 * Math.PI * (t / 3600 - peakHour)) / 24)),
-    }
+    return resolvable((b) => {
+      const mean = opts.mean.eval(b)
+      return {
+        describe: `diurnal(mean=${mean}, peakToMean=${opts.peakToMean})`,
+        at: (t) => mean * (1 + amp * Math.cos((2 * Math.PI * (t / 3600 - peakHour)) / 24)),
+      }
+    })
   },
-  fromArray: <D>(values: readonly Expr<D>[], stepSeconds: number): Series<D> => {
-    const vs = values.map((v) => v.eval())
-    return { describe: `array(${vs.length})`, at: (t) => vs[Math.min(vs.length - 1, Math.floor(t / stepSeconds))] ?? 0 }
-  },
+  fromArray: <D>(values: readonly Expr<D>[], stepSeconds: number): Series<D> =>
+    resolvable((b) => {
+      const vs = values.map((v) => v.eval(b))
+      return {
+        describe: `array(${vs.length})`,
+        at: (t) => vs[Math.min(vs.length - 1, Math.floor(t / stepSeconds))] ?? 0,
+      }
+    }),
 }
 
 doc({

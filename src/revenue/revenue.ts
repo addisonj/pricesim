@@ -262,10 +262,15 @@ const sourceOf = (path: CostEntry['path']): { request?: string; gauges?: string[
   }
 }
 
-const claims = (m: Meter, src: ReturnType<typeof sourceOf>): boolean =>
+/**
+ * Whether a meter claims an entry's cost. A gauge meter claims cost under gauges named in `costFrom`; without
+ * `costFrom`, the book's only gauge meter claims all gauge-driven cost, and one of several claims its own name.
+ */
+const claims = (m: Meter, src: ReturnType<typeof sourceOf>, onlyGaugeMeter: boolean): boolean =>
   m.kind === 'requests'
     ? src.request !== undefined && src.request in m.per
-    : src.gauges !== undefined && src.gauges.some((g) => (m.costFrom ?? [m.gauge]).includes(g))
+    : src.gauges !== undefined &&
+      (m.costFrom ? src.gauges.some((g) => m.costFrom!.includes(g)) : onlyGaugeMeter || src.gauges.includes(m.gauge))
 
 export interface RevenueInput {
   readonly book: PriceBook
@@ -281,6 +286,7 @@ export const computeRevenue = ({ book, customers, entries, singleId }: RevenueIn
   const usedAll = entries.filter((e) => e.kind === 'used').reduce((a, e) => a + e.cost, 0)
   const overheadAll = entries.filter((e) => e.kind !== 'used').reduce((a, e) => a + e.cost, 0)
   const meterNames = Object.keys(book.meters)
+  const gaugeMeters = meterNames.filter((n) => book.meters[n]!.kind === 'gauge').length
 
   const out: CustomerRevenue[] = customers.map((c) => {
     const plan = resolvePlan(book, c.plan)
@@ -301,7 +307,7 @@ export const computeRevenue = ({ book, customers, entries, singleId }: RevenueIn
     let unclaimed = 0
     for (const e of mine) {
       const src = sourceOf(e.path)
-      const by = meterNames.filter((n) => claims(book.meters[n]!, src))
+      const by = meterNames.filter((n) => claims(book.meters[n]!, src, gaugeMeters === 1))
       if (!by.length) {
         unclaimed += e.cost
         continue

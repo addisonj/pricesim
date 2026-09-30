@@ -38,7 +38,7 @@ export default scenario({ name: 'api', root: api, workload: typical, pricing: pr
 - **Attributes:** a fixed `Expr`, or a distribution: `dist.fixed`, `dist.uniform`, `dist.empirical([{ value, weight }])`, `dist.lognormal({ median, p99 })`. `samples` (default 64) and `seed` (default 1) control the sampling.
 - **Gauges:** constants, or a function of `{ rate, time }`: `rate.<request>` is the mean rate over the period, `time` the elapsed seconds. `retained({ rate, retention?, ageAtStart? })` gives a filled retention window, or data that keeps accumulating.
 - **Other options:** `params` (override `param(…)`s used in the model's expressions), `period` and `step` (`Expr<s>`; defaults 730 h and 1 h), `peak: 'max' | { percentile: 99 }`.
-- Series and distribution values are evaluated when built, so a `param(…)` inside `series.*` or `dist.*` uses its default, not the workload's `params`. Write rates as functions of plain numbers instead.
+- A `param(…)` inside `series.*` or `dist.*` follows the workload's `params`, and `pricesim sweep --var <param>=…` moves it: e.g. `series.constant(param('writeRate', q(200, perSecond)))`.
 
 ## Scenarios
 

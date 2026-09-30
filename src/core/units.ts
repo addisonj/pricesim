@@ -1,7 +1,7 @@
 // Units: a dimension plus a scale to base units. Types track the dimension only, so KB/GB/GiB are all
 // `{ byte: 1 }` and are converted at runtime.
 import { doc, docs } from '../docs/registry.ts'
-import { BASE_DIMS, combine, UnitError, type Div, type Mul, type RDim } from './dim.ts'
+import { BASE_DIMS, combine, sameDim, showDim, UnitError, type Div, type Mul, type RDim } from './dim.ts'
 
 export class Unit<D> {
   /** phantom field: makes D invariant so extra exponents are never silently accepted */
@@ -140,7 +140,13 @@ export const baseUnit = <N extends string>(name: N): Unit<{ [K in N]: 1 }> => {
     throw new UnitError(`baseUnit: '${name}' is a built-in dimension or unit`)
   }
   const existing = registry.get(name)
-  if (existing) return existing as Unit<{ [K in N]: 1 }>
+  if (existing) {
+    // a name registered by defineUnit is a scaled unit of another dimension, not a base unit
+    if (existing.scale !== 1 || !sameDim(existing.dim, { [name]: 1 })) {
+      throw new UnitError(`baseUnit: '${name}' is already defined as a unit of ${showDim(existing.dim)} (defineUnit)`)
+    }
+    return existing as Unit<{ [K in N]: 1 }>
+  }
   const created = new Unit<{ [K in N]: 1 }>(name, 1, { [name]: 1 })
   registry.set(name, created as Unit<unknown>)
   return created
@@ -151,7 +157,9 @@ export const baseUnit = <N extends string>(name: N): Unit<{ [K in N]: 1 }> => {
  * use it. Returns the unit, typed like `of`.
  */
 export const defineUnit = <D>(name: string, of: Unit<D>, scale = 1): Unit<D> => {
-  if (name in u || (registry.has(name) && registry.get(name)!.scale !== of.scale * scale)) {
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) throw new UnitError(`defineUnit: invalid name '${name}'`)
+  const prev = registry.get(name)
+  if (name in u || (prev && (prev.scale !== of.scale * scale || !sameDim(prev.dim, of.dim)))) {
     throw new UnitError(`defineUnit: '${name}' is already defined differently`)
   }
   const created = new Unit<D>(name, of.scale * scale, of.dim)
@@ -233,7 +241,7 @@ doc({
   guidance: `
 - Only needed when the unit must be reachable by name (\`parseUnit\`, \`parseQuantity\`, model files, the CLI). In code, \`q(2000, stream)\` works without it.
 - Calling it again with the same name and the same scale is allowed; a different scale throws \`UnitError\`.
-- The name is not validated the way \`baseUnit\` names are, and it shares a namespace with base units: don't reuse a \`baseUnit\` name.`,
+- Names follow the same rules as \`baseUnit\` names and share its namespace: redefining a name with a different scale or dimension throws, and so does \`baseUnit\` on a name \`defineUnit\` registered.`,
   examples: [
     `import { baseUnit, defineUnit, parseQuantity, q } from 'pricesim'
 

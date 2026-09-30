@@ -34,25 +34,27 @@ Run it as `npx pricesim …` in a project that depends on pricesim, or `pnpm cli
 
 "What does this cost at 5× today's traffic?"
 
-`sweep` varies one variable at a time (a grid over several), so it can't scale every request rate together. Write the workload as a function of scale and evaluate the variants:
+Give every rate the same multiplier param, then sweep it (`rate.<request>` sweeps one request type at a time; several `--var`s form a grid, not a joint scale):
 
 ```ts
-// in the model: rates as a function of a traffic multiplier
-export const traffic = (x: number) =>
-  workload(api, {
-    requests: {
-      write: { rate: series.diurnal({ mean: q(200 * x, perSecond), peakToMean: 1.5 }), attrs: { bytes: q(1, u.KB) } },
+// in the model
+const traffic = param('traffic', q(1, u.one))
+const typical = workload(api, {
+  requests: {
+    write: {
+      rate: series.diurnal({ mean: q(200, perSecond).mul(traffic), peakToMean: 1.5 }),
+      attrs: { bytes: q(1, u.KB) },
     },
-  })
-
-// a script: today vs 5×
-for (const x of [1, 5]) {
-  const r = evaluate(scenario({ name: `x${x}`, root: api, workload: traffic(x), pricing: pricing(), interAz }))
-  console.log(x, r.total.toFixed(0), r.pools.map((p) => `${p.name}=${p.count} (${p.binding})`).join(' '))
-}
+    read: { rate: series.constant(q(500, perSecond).mul(traffic)), attrs: { bytes: q(1, u.KB) } },
+  },
+})
 ```
 
-Report how the total scales (it's rarely 5×: minimums get absorbed, tiers get cheaper), and which pool or line grows fastest.
+```sh
+pricesim sweep model.ts --var traffic=1,2,5 --csv
+```
+
+Report how the total scales (it's rarely linear: minimums get absorbed, tiers get cheaper), and which pool or line grows fastest (the `pool:` and `dim:` columns).
 
 "Why is cross-AZ so large?"
 

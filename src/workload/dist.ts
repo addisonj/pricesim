@@ -1,7 +1,7 @@
 // Distributions for request attributes (DESIGN.md §7), e.g. a mix of message sizes. The engine draws a fixed
 // number of seeded samples per request type (Monte Carlo), so non-linear expressions such as
 // ceil(bytes / 1 KB) are costed correctly and results are reproducible.
-import { Expr, q } from '../core/expr.ts'
+import { Expr, q, type Bindings } from '../core/expr.ts'
 import type { RDim } from '../core/dim.ts'
 import type { Unit } from '../core/units.ts'
 import { normal, type Rng } from './random.ts'
@@ -17,7 +17,13 @@ export class Dist<D> {
     readonly mean: number,
     /** one sample in base units */
     readonly sample: (r: Rng) => number,
+    private readonly rebuild?: (b: Bindings) => Dist<D>,
   ) {}
+
+  /** The same distribution with its expressions evaluated under `bindings` (the workload's params). */
+  resolve(bindings: Bindings): Dist<D> {
+    return this.rebuild ? this.rebuild(bindings) : this
+  }
 
   /** a constant expression at the distribution's mean (used by closed forms) */
   meanExpr(): Expr<D> {
@@ -25,51 +31,67 @@ export class Dist<D> {
   }
 }
 
+/** A distribution built from expressions: built with no bindings, re-built by `resolve`. */
+const resolvable = <D>(build: (b: Bindings) => Dist<D>): Dist<D> => {
+  const make = (b: Bindings): Dist<D> => {
+    const d = build(b)
+    return new Dist<D>(d.describe, d.dim, d.mean, d.sample, make)
+  }
+  return make({})
+}
+
 export const isDist = (x: unknown): x is Dist<any> => x instanceof Dist
 
 export const dist = {
   /** always the same value */
-  fixed: <D>(value: Expr<D>): Dist<D> => {
-    const v = value.eval()
-    return new Dist<D>(`fixed(${v})`, value.dim, v, () => v)
-  },
+  fixed: <D>(value: Expr<D>): Dist<D> =>
+    resolvable((b) => {
+      const v = value.eval(b)
+      return new Dist<D>(`fixed(${v})`, value.dim, v, () => v)
+    }),
 
   /** uniform between min and max */
-  uniform: <D>(opts: { min: Expr<D>; max: Expr<D> }): Dist<D> => {
-    const a = opts.min.eval()
-    const b = opts.max.eval()
-    if (!(b >= a)) throw new Error('dist.uniform: max must be >= min')
-    return new Dist<D>(`uniform(${a}, ${b})`, opts.min.dim, (a + b) / 2, (r) => a + (b - a) * r.next())
-  },
+  uniform: <D>(opts: { min: Expr<D>; max: Expr<D> }): Dist<D> =>
+    resolvable((bs) => {
+      const a = opts.min.eval(bs)
+      const b = opts.max.eval(bs)
+      if (!(b >= a)) throw new Error('dist.uniform: max must be >= min')
+      return new Dist<D>(`uniform(${a}, ${b})`, opts.min.dim, (a + b) / 2, (r) => a + (b - a) * r.next())
+    }),
 
   /** discrete values with weights (normalized) */
-  empirical: <D>(entries: readonly { value: Expr<D>; weight: number }[]): Dist<D> => {
-    if (!entries.length) throw new Error('dist.empirical: needs at least one entry')
-    const total = entries.reduce((a, e) => a + e.weight, 0)
-    if (!(total > 0)) throw new Error('dist.empirical: weights must sum to > 0')
-    const vs = entries.map((e) => ({ v: e.value.eval(), p: e.weight / total }))
-    const mean = vs.reduce((a, x) => a + x.v * x.p, 0)
-    return new Dist<D>(`empirical(${vs.length})`, entries[0]!.value.dim, mean, (r) => {
-      let u = r.next()
-      for (const x of vs) {
-        if (u < x.p) return x.v
-        u -= x.p
-      }
-      return vs[vs.length - 1]!.v
-    })
-  },
+  empirical: <D>(entries: readonly { value: Expr<D>; weight: number }[]): Dist<D> =>
+    resolvable((bs) => {
+      if (!entries.length) throw new Error('dist.empirical: needs at least one entry')
+      const total = entries.reduce((a, e) => a + e.weight, 0)
+      if (!(total > 0)) throw new Error('dist.empirical: weights must sum to > 0')
+      const vs = entries.map((e) => ({ v: e.value.eval(bs), p: e.weight / total }))
+      const mean = vs.reduce((a, x) => a + x.v * x.p, 0)
+      return new Dist<D>(`empirical(${vs.length})`, entries[0]!.value.dim, mean, (r) => {
+        let u = r.next()
+        for (const x of vs) {
+          if (u < x.p) return x.v
+          u -= x.p
+        }
+        return vs[vs.length - 1]!.v
+      })
+    }),
 
   /** log-normal from its median and 99th percentile (both in the same unit) */
-  lognormal: <D>(opts: { median: Expr<D>; p99: Expr<D> }): Dist<D> => {
-    const m = opts.median.eval()
-    const p99 = opts.p99.eval()
-    if (!(m > 0 && p99 >= m)) throw new Error('dist.lognormal: need 0 < median <= p99')
-    const mu = Math.log(m)
-    const sigma = Math.log(p99 / m) / 2.326347874
-    return new Dist<D>(`lognormal(median=${m}, p99=${p99})`, opts.median.dim, Math.exp(mu + (sigma * sigma) / 2), (r) =>
-      Math.exp(mu + sigma * normal(r)),
-    )
-  },
+  lognormal: <D>(opts: { median: Expr<D>; p99: Expr<D> }): Dist<D> =>
+    resolvable((b) => {
+      const m = opts.median.eval(b)
+      const p99 = opts.p99.eval(b)
+      if (!(m > 0 && p99 >= m)) throw new Error('dist.lognormal: need 0 < median <= p99')
+      const mu = Math.log(m)
+      const sigma = Math.log(p99 / m) / 2.326347874
+      return new Dist<D>(
+        `lognormal(median=${m}, p99=${p99})`,
+        opts.median.dim,
+        Math.exp(mu + (sigma * sigma) / 2),
+        (r) => Math.exp(mu + sigma * normal(r)),
+      )
+    }),
 }
 
 /** Convenience: a fixed distribution from a number in a unit. */

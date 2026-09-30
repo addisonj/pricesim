@@ -5,9 +5,9 @@
 //   <request>.<attr>  request attribute
 //   gauge.<name>      root gauge level
 //   <param>           param override
-import { Expr } from '../core/expr.ts'
+import { Expr, paramNames } from '../core/expr.ts'
 import type { Series } from '../workload/series.ts'
-import { seriesMean, type Workload } from '../workload/workload.ts'
+import { resolveLoads, seriesMean, type Workload } from '../workload/workload.ts'
 import { evaluate, type Result } from './evaluate.ts'
 import { singleWorkload, withWorkload, type Scenario } from './scenario.ts'
 import { doc, docs } from '../docs/registry.ts'
@@ -72,10 +72,26 @@ export const withOverrides = (s: Scenario, point: Readonly<Record<string, number
       if (!load) throw new Error(`sweep: no request '${req}' in the workload`)
       requests[req] = { ...load, attrs: { ...load.attrs, [attr]: constLike(load.attrs[attr], v, name) } }
     } else {
+      // a misspelt param would otherwise change nothing
+      if (!paramNames().has(name) && !(name in (w.params ?? {}))) {
+        const near = [...paramNames()].filter((p) => p.toLowerCase().includes(name.toLowerCase().slice(0, 4)))
+        throw new Error(
+          `sweep: unknown variable '${name}': not a param(…) in the model, and not rate.<request>, <request>.<attr> or gauge.<name>${near.length ? `; did you mean ${near.join(', ')}?` : ''}`,
+        )
+      }
       params[name] = v
     }
   }
-  return withWorkload(s, { ...w, requests, gauges, params })
+  // re-evaluate series and distributions under the new params, keeping any rate override made above
+  const changedParams = Object.keys(point).some((n) => !n.includes('.'))
+  const resolved = changedParams ? resolveLoads(requests, params) : requests
+  const overridden = Object.keys(point)
+    .filter((n) => n.startsWith('rate.'))
+    .map((n) => n.slice(5))
+  const merged = Object.fromEntries(
+    Object.entries(resolved).map(([n, l]) => [n, overridden.includes(n) ? requests[n] : l]),
+  ) as Workload['requests']
+  return withWorkload(s, { ...w, requests: merged, gauges, params })
 }
 
 const toRow = (inputs: Record<string, number>, r: Result): SweepRow => ({
@@ -124,7 +140,7 @@ doc({
 - \`rate.<request>\` rescales that request's series to the given mean, keeping its shape (a diurnal curve stays diurnal, peaks scale with it). A series with mean 0 becomes constant.
 - Gauges derived from rates in the workload follow \`rate.*\` overrides; \`gauge.<name>\` replaces a level with a constant.
 - \`<request>.<attr>\` replaces the attribute (even a distribution) with a constant.
-- A name without a dot is taken as a param and is **not** checked: a misspelt param changes nothing. Unknown requests, attributes and gauges throw.
+- A name without a dot is a param; it must be a \`param(…)\` in the model (or set in the workload's \`params\`), so a misspelt name throws. Unknown requests, attributes and gauges throw too.
 - Use \`range\` for evenly or log-spaced values; for a formula instead of a table, use \`closedForm\`.
 - CLI: \`pricesim sweep model.ts --var rate.upload=10..1000:log:5 [--csv]\`.`,
   examples: [

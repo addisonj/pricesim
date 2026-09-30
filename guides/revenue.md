@@ -71,7 +71,7 @@ export default scenario({
 `evaluate(s).revenue` (and `pricesim eval`) gives revenue, cost and margin in total, per meter and per customer.
 
 - Margin is against the **provider's** cost only; charges on other accounts (`account: 'customer'`) are excluded.
-- A request meter's cost is the cost under its requests; a gauge meter's cost is the cost under its gauge, and `costFrom` names the gauges it becomes further down the graph (e.g. a `streams` meter whose cost is disk and memory).
+- A request meter's cost is the cost under its requests. A book's only gauge meter gets all gauge-driven cost; with several gauge meters, give each `costFrom`: the gauges (and `gaugeUse` resources) its gauge becomes further down the graph (e.g. a `streams` meter whose cost is `['streams', 'memory']`).
 - Cost no meter covers (idle, fixed, unmetered requests) is the `unallocated` line; `allocate: 'proportional'` spreads it over the meters.
 - For explicit price tables that you tune, keep the numbers in one exported object and build the book from it; don't scale arrays of multipliers.
 

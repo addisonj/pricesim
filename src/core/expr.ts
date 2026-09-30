@@ -170,7 +170,22 @@ nodes.in(u.count, { rate: 40_000 }) // 8`,
 })
 
 /** A named constant with a default, overridable per scenario. */
-export const param = <D>(name: string, def: Expr<D>): Expr<D> => new Expr({ k: 'param', name, def: def.node }, def.dim)
+const PARAM_NAMES = new Set<string>()
+export const param = <D>(name: string, def: Expr<D>): Expr<D> => {
+  PARAM_NAMES.add(name)
+  return new Expr({ k: 'param', name, def: def.node }, def.dim)
+}
+/** Names of every `param(…)` created so far (in any model loaded in this process). */
+export const paramNames = (): ReadonlySet<string> => PARAM_NAMES
+
+doc({
+  name: 'paramNames',
+  kind: 'function',
+  module: 'pricesim',
+  summary: 'Names of every `param(…)` created so far in this process; sweeps use it to reject misspelt param names.',
+  signature: 'paramNames(): ReadonlySet<string>',
+  internal: true,
+})
 
 doc({
   name: 'param',

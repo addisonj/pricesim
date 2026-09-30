@@ -1,6 +1,6 @@
 // S3 Standard buckets: tiered storage, PUT-class and GET-class requests (rates from s3.gen.ts). Storage tiers pool across the
 // scenario because the billing dimension is shared by every bucket.
-import { ceil, q } from '../../core/expr.ts'
+import { ceil, max, q } from '../../core/expr.ts'
 import { u } from '../../core/units.ts'
 import { doc } from '../../docs/registry.ts'
 import { offering } from '../../model/node.ts'
@@ -53,7 +53,7 @@ export const s3Bucket = (name: string, opts: { partSize?: ReturnType<typeof q<{ 
     gauges: { stored: gauge(u.byte, { billAs: s3Standard.storage }) },
     requests: () => ({
       put: request({ bytes: u.byte }, (r) => ({
-        bill: [bill(s3Standard.putRequests, ceil(r.bytes.div(partSize)).mul(q(1, u.req)))],
+        bill: [bill(s3Standard.putRequests, max(q(1, u.one), ceil(r.bytes.div(partSize))).mul(q(1, u.req)))],
       })),
       get: request({ bytes: u.byte }, () => ({
         bill: [bill(s3Standard.getRequests, q(1, u.req))],
@@ -75,12 +75,12 @@ doc({
       type: 'Expr<byte>',
       optional: true,
       default: 'q(16, u.MiB)',
-      doc: 'Multipart part size: a PUT of `bytes` bills `ceil(bytes / partSize)` PUT requests.',
+      doc: 'Multipart part size: a PUT of `bytes` bills `max(1, ceil(bytes / partSize))` PUT requests.',
     },
   ],
   returns: "An offering; add it to a service's `deps` and call it from request bodies.",
   guidance: `
-- **Requests:** \`put({ bytes })\` bills \`ceil(bytes / partSize)\` PUT-class requests ($0.005 per 1,000). A 0-byte put bills none. \`get({ bytes })\` bills one GET-class request ($0.0004 per 1,000) whatever the size.
+- **Requests:** \`put({ bytes })\` bills \`max(1, ceil(bytes / partSize))\` PUT-class requests ($0.005 per 1,000), so even a 0-byte put bills one. \`get({ bytes })\` bills one GET-class request ($0.0004 per 1,000) whatever the size.
 - **Gauge:** \`stored\` (bytes), billed as GB-months of S3 Standard storage, tiered ($0.023 / $0.022 / $0.021 per GB-month at 50 TB and 500 TB). Map a service gauge onto it with \`gaugeMap\`.
 - All buckets share the \`s3Standard\` dimensions, so storage tiers apply to the scenario's total.
 - Not billed: data transfer (use \`internetEgress\` for bytes to the internet, edges for cross-AZ), lifecycle, other storage classes, the requests that start and complete a multipart upload.`,

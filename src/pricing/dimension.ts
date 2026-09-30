@@ -105,10 +105,26 @@ const storage = dimension('example.store.storage', u.GB.mul(u.month), 0.023, {
   guide: 'offerings',
 })
 
-export const tiered = (tiers: readonly { upTo: number | null; rate: number }[]): PriceSchedule => ({
-  kind: 'tiered',
-  tiers,
-})
+export const tiered = (tiers: readonly { upTo: number | null; rate: number }[]): PriceSchedule => {
+  const fail = (msg: string): never => {
+    throw new Error(`tiered: ${msg}`)
+  }
+  if (!tiers.length) fail('needs at least one tier')
+  let prev = 0
+  tiers.forEach((t, i) => {
+    const last = i === tiers.length - 1
+    if (!(t.rate >= 0)) fail(`tier ${i + 1} has rate ${t.rate}; rates must be >= 0`)
+    if (t.upTo === null) {
+      if (!last) fail(`only the last tier can have upTo: null (tier ${i + 1} of ${tiers.length})`)
+      return
+    }
+    // a finite last tier would leave usage above it unpriced
+    if (last) fail(`the last tier must have upTo: null (it ends at ${t.upTo}; usage above it would cost nothing)`)
+    if (!(t.upTo > prev)) fail(`tier bounds must increase (tier ${i + 1}: upTo ${t.upTo} after ${prev})`)
+    prev = t.upTo
+  })
+  return { kind: 'tiered', tiers }
+}
 export const freeTier = (free: number, then: PriceSchedule | number): PriceSchedule => ({
   kind: 'freeTier',
   free,
@@ -133,7 +149,7 @@ doc({
   guidance: `
 - Graduated, not all-units: with tiers 50,000 @ 0.023 then 0.022, 100,000 units cost 50,000 × 0.023 + 50,000 × 0.022.
 - Tiers apply to the month's usage pooled across the account (see \`dimension\`), so a tiered dimension shared by several services gets one blended rate.
-- End with \`upTo: null\`. Usage beyond the last finite \`upTo\` is not charged.`,
+- The last tier must have \`upTo: null\`, and bounds must increase; \`tiered\` throws otherwise (a finite last tier would leave usage above it unpriced).`,
   examples: [
     `import { dimension, tiered, u } from 'pricesim'
 

@@ -334,7 +334,7 @@ The new unit, typed with the dimension of `of` (so `q(2, kstream).in(stream)` is
 
 - Only needed when the unit must be reachable by name (`parseUnit`, `parseQuantity`, model files, the CLI). In code, `q(2000, stream)` works without it.
 - Calling it again with the same name and the same scale is allowed; a different scale throws `UnitError`.
-- The name is not validated the way `baseUnit` names are, and it shares a namespace with base units: don't reuse a `baseUnit` name.
+- Names follow the same rules as `baseUnit` names and share its namespace: redefining a name with a different scale or dimension throws, and so does `baseUnit` on a name `defineUnit` registered.
 
 #### Examples
 
@@ -1110,7 +1110,7 @@ A `PriceBook`. Pass it as a scenario's `priceBook`; `evaluate(scenario).revenue`
 - **Gauge meters** (`m.gauge`): the gauge level integrated over time, in a level × time unit, e.g. `u.count.mul(u.month)` for item-months or `u.GB.mul(u.month)` for a byte gauge.
 - **Billing is per customer:** charges (tiers on the customer's own quantity), then discounts on charges, then fees, then minimum top-ups. See `charge`, `discount`, `fee`, `minimum`.
 - **Margin is against the provider's cost only**: cost priced to the scenario's `account` (default `'provider'`). Nodes billed to another account (`account: 'customer'`) are excluded. A customer's cost is its own used cost plus a share of idle and fixed cost in proportion to its used cost (equal shares if nobody has used cost).
-- **Per-meter cost.** A request meter claims the used cost under the root requests it lists. A gauge meter claims cost under root gauges whose path contains a gauge (or `gaugeUse` resource) named in `costFrom`, default the meter's own gauge name. The root's gauge name is usually not on that path: when the root maps `files` to a bucket's `stored`, the cost is found under `stored`, so pass `costFrom: ['stored']`. Names match anywhere below the root, not per node.
+- **Per-meter cost.** A request meter claims the used cost under the root requests it lists. A gauge meter claims cost under root gauges whose path contains a gauge (or `gaugeUse` resource) named in `costFrom`. Without `costFrom`, a book's **only** gauge meter claims all gauge-driven cost; with several gauge meters, each claims its own gauge name, which is usually not on the path (when the root maps `files` to a bucket's `stored`, the cost is found under `stored`), so give each one `costFrom`. Names match anywhere below the root, not per node.
 - A cost claimed by several meters (e.g. write units and GB on the same request) is split in proportion to those meters' revenue, or evenly if they have none.
 - **`allocate`:** with `'unallocated'`, idle, fixed and unclaimed used cost are reported as `unallocated` (per customer and in total). With `'proportional'` they are spread over the meters in proportion to each meter's claimed cost (and stay unallocated if no meter claimed any).
 - Fee and minimum revenue belongs to no meter: per-meter revenue is charges after discounts.
@@ -1634,7 +1634,7 @@ sweep(s: Scenario, vars: Record<string, number[]>): SweepRow[]
 - `rate.<request>` rescales that request's series to the given mean, keeping its shape (a diurnal curve stays diurnal, peaks scale with it). A series with mean 0 becomes constant.
 - Gauges derived from rates in the workload follow `rate.*` overrides; `gauge.<name>` replaces a level with a constant.
 - `<request>.<attr>` replaces the attribute (even a distribution) with a constant.
-- A name without a dot is taken as a param and is **not** checked: a misspelt param changes nothing. Unknown requests, attributes and gauges throw.
+- A name without a dot is a param; it must be a `param(…)` in the model (or set in the workload's `params`), so a misspelt name throws. Unknown requests, attributes and gauges throw too.
 - Use `range` for evenly or log-spaced values; for a formula instead of a table, use `closedForm`.
 - CLI: `pricesim sweep model.ts --var rate.upload=10..1000:log:5 [--csv]`.
 
@@ -1748,7 +1748,7 @@ A `PriceSchedule` to pass to `dimension` (or to `freeTier` as `then`).
 
 - Graduated, not all-units: with tiers 50,000 @ 0.023 then 0.022, 100,000 units cost 50,000 × 0.023 + 50,000 × 0.022.
 - Tiers apply to the month's usage pooled across the account (see `dimension`), so a tiered dimension shared by several services gets one blended rate.
-- End with `upTo: null`. Usage beyond the last finite `upTo` is not charged.
+- The last tier must have `upTo: null`, and bounds must increase; `tiered` throws otherwise (a finite last tier would leave usage above it unpriced).
 
 #### Examples
 
@@ -1983,7 +1983,7 @@ A `Workload`. Put it in `scenario({ workload })`, or in a tenant's `{ id, worklo
 - **Derived gauges:** write levels as a function of `rate` (e.g. `rate.put × bytes per put × retention`, or `retained(…)`) so they follow rate changes in `sweep`/`capacity` and stay symbolic in `closedForm`. A fixed number does not move when you sweep the rate.
 - A level that references `time`/`elapsed` is evaluated at every step: billing uses the average, pools are sized on the peak step (usually the end of the period).
 - **Distributions:** for an attribute given as `dist.*`, each of `samples` draws carries 1/samples of the requests, so non-linear bodies (`ceil(bytes / 1 KB)`) are costed per draw, not at the mean. Results are reproducible for a given `seed`.
-- Rate series and attribute values are evaluated when built, so they can't depend on `params`.
+- A `param(…)` inside a rate series or a `dist.*` attribute follows `params` (and sweeps of that param): the workload re-evaluates them under its params.
 
 #### Examples
 
@@ -3242,10 +3242,10 @@ An offering; add it to a service's `deps`.
 #### Guidance
 
 - **Requests** (all take `{ bytes }`):
-  - `write`: `ceil(bytes / 1 KB) × (1 + gsis)` WRUs ($0.625 per million).
-  - `read`: eventually consistent GetItem, `0.5 × ceil(bytes / 4 KB)` RRUs ($0.125 per million).
+  - `write`: `max(1, ceil(bytes / 1 KiB)) × (1 + gsis)` WRUs ($0.625 per million).
+  - `read`: eventually consistent GetItem, `0.5 × max(1, ceil(bytes / 4 KiB))` RRUs ($0.125 per million).
   - `query`: the same formula over the total bytes returned.
-- KB here is 1,000 bytes. A 0-byte request bills 0 units. Strongly consistent and transactional requests are not modeled; bill `dynamodbOnDemand.readUnits` / `.writeUnits` from your own offering for them.
+- Unit sizes are 1 KiB and 4 KiB (1,024-byte KB, as DynamoDB counts item size); every request bills at least one unit. Strongly consistent and transactional requests are not modeled; bill `dynamodbOnDemand.readUnits` / `.writeUnits` from your own offering for them.
 - **Gauge:** `stored` (bytes), $0.25/GB-month after 25 GB free. GSI storage is not added: include it in the bytes you map.
 
 #### Examples
@@ -3871,7 +3871,7 @@ s3Bucket(name: string, opts?: { partSize?: Expr<byte> }): Offering
 #### Parameters
 
 - `name`: `string`. Node name is `s3:<name>`.
-- `opts.partSize`: `Expr<byte>` (optional, default q(16, u.MiB)). Multipart part size: a PUT of `bytes` bills `ceil(bytes / partSize)` PUT requests.
+- `opts.partSize`: `Expr<byte>` (optional, default q(16, u.MiB)). Multipart part size: a PUT of `bytes` bills `max(1, ceil(bytes / partSize))` PUT requests.
 
 #### Returns
 
@@ -3879,7 +3879,7 @@ An offering; add it to a service's `deps` and call it from request bodies.
 
 #### Guidance
 
-- **Requests:** `put({ bytes })` bills `ceil(bytes / partSize)` PUT-class requests ($0.005 per 1,000). A 0-byte put bills none. `get({ bytes })` bills one GET-class request ($0.0004 per 1,000) whatever the size.
+- **Requests:** `put({ bytes })` bills `max(1, ceil(bytes / partSize))` PUT-class requests ($0.005 per 1,000), so even a 0-byte put bills one. `get({ bytes })` bills one GET-class request ($0.0004 per 1,000) whatever the size.
 - **Gauge:** `stored` (bytes), billed as GB-months of S3 Standard storage, tiered ($0.023 / $0.022 / $0.021 per GB-month at 50 TB and 500 TB). Map a service gauge onto it with `gaugeMap`.
 - All buckets share the `s3Standard` dimensions, so storage tiers apply to the scenario's total.
 - Not billed: data transfer (use `internetEgress` for bytes to the internet, edges for cross-AZ), lifecycle, other storage classes, the requests that start and complete a multipart upload.
@@ -3945,7 +3945,7 @@ An offering, with `placementOf(bucket)` = `singleAz`.
 
 #### Guidance
 
-- **Requests:** `put({ bytes })` bills `ceil(bytes / partSize)` PUT requests ($0.00113 per 1,000) plus `bytes` of upload ($0.0032/GB). `get({ bytes })` bills one GET request ($0.00003 per 1,000) plus `bytes` of retrieval ($0.0006/GB).
+- **Requests:** `put({ bytes })` bills `max(1, ceil(bytes / partSize))` PUT requests ($0.00113 per 1,000) plus `bytes` of upload ($0.0032/GB). `get({ bytes })` bills one GET request ($0.00003 per 1,000) plus `bytes` of retrieval ($0.0006/GB).
 - **Gauge:** `stored` (bytes), billed at $0.11/GB-month.
 - Data lives in one AZ, but the engine doesn't read placement: add an `edge` for clients in other AZs if cross-AZ transfer matters.
 

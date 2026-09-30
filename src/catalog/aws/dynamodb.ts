@@ -1,6 +1,6 @@
 // DynamoDB on-demand tables: write/read request units by item size, indexed storage with a 25 GB free tier.
 // Rates from dynamodb.gen.ts.
-import { ceil, q } from '../../core/expr.ts'
+import { ceil, max, q } from '../../core/expr.ts'
 import { u } from '../../core/units.ts'
 import { doc } from '../../docs/registry.ts'
 import { offering } from '../../model/node.ts'
@@ -48,12 +48,12 @@ export const dynamoTable = (name: string, opts: { gsis?: number } = {}) => {
   return offering(`dynamodb:${name}`, {
     gauges: { stored: gauge(u.byte, { billAs: dynamodbOnDemand.storage }) },
     requests: () => ({
-      /** PutItem/UpdateItem: 1 WRU per 1 KB of item size (rounded up), per table + GSI */
+      /** PutItem/UpdateItem: 1 WRU per 1 KiB of item size (rounded up, at least 1), per table + GSI */
       write: request({ bytes: u.byte }, (r) => ({
         bill: [
           bill(
             dynamodbOnDemand.writeUnits,
-            ceil(r.bytes.div(q(1, u.KB)))
+            max(q(1, u.one), ceil(r.bytes.div(q(1, u.KiB))))
               .mul(writeAmp)
               .mul(q(1, u.op)),
           ),
@@ -64,7 +64,7 @@ export const dynamoTable = (name: string, opts: { gsis?: number } = {}) => {
         bill: [
           bill(
             dynamodbOnDemand.readUnits,
-            ceil(r.bytes.div(q(4, u.KB)))
+            max(q(1, u.one), ceil(r.bytes.div(q(4, u.KiB))))
               .mul(0.5)
               .mul(q(1, u.op)),
           ),
@@ -75,7 +75,7 @@ export const dynamoTable = (name: string, opts: { gsis?: number } = {}) => {
         bill: [
           bill(
             dynamodbOnDemand.readUnits,
-            ceil(r.bytes.div(q(4, u.KB)))
+            max(q(1, u.one), ceil(r.bytes.div(q(4, u.KiB))))
               .mul(0.5)
               .mul(q(1, u.op)),
           ),
@@ -104,10 +104,10 @@ doc({
   returns: "An offering; add it to a service's `deps`.",
   guidance: `
 - **Requests** (all take \`{ bytes }\`):
-  - \`write\`: \`ceil(bytes / 1 KB) × (1 + gsis)\` WRUs ($0.625 per million).
-  - \`read\`: eventually consistent GetItem, \`0.5 × ceil(bytes / 4 KB)\` RRUs ($0.125 per million).
+  - \`write\`: \`max(1, ceil(bytes / 1 KiB)) × (1 + gsis)\` WRUs ($0.625 per million).
+  - \`read\`: eventually consistent GetItem, \`0.5 × max(1, ceil(bytes / 4 KiB))\` RRUs ($0.125 per million).
   - \`query\`: the same formula over the total bytes returned.
-- KB here is 1,000 bytes. A 0-byte request bills 0 units. Strongly consistent and transactional requests are not modeled; bill \`dynamodbOnDemand.readUnits\` / \`.writeUnits\` from your own offering for them.
+- Unit sizes are 1 KiB and 4 KiB (1,024-byte KB, as DynamoDB counts item size); every request bills at least one unit. Strongly consistent and transactional requests are not modeled; bill \`dynamodbOnDemand.readUnits\` / \`.writeUnits\` from your own offering for them.
 - **Gauge:** \`stored\` (bytes), $0.25/GB-month after 25 GB free. GSI storage is not added: include it in the bytes you map.`,
   examples: [
     `import { q, u } from 'pricesim'

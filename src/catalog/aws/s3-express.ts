@@ -5,7 +5,7 @@
 // request above 512 KB; AWS removed that threshold when it cut the per-GB rates by 60%
 // (https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-s3-express-one-zone-reduces-storage-request-prices/).
 // The rates below are the post-change rates, so they are billed on every byte.
-import { ceil, q, type Expr } from '../../core/expr.ts'
+import { ceil, max, q, type Expr } from '../../core/expr.ts'
 import { u } from '../../core/units.ts'
 import { doc } from '../../docs/registry.ts'
 import { offering, type AnyCallable, type GraphNode } from '../../model/node.ts'
@@ -82,7 +82,7 @@ export const s3ExpressBucket = (name: string, opts: { partSize?: Expr<{ byte: 1 
     requests: () => ({
       put: request({ bytes: u.byte }, (r) => ({
         bill: [
-          bill(s3Express.putRequests, ceil(r.bytes.div(partSize)).mul(q(1, u.req))),
+          bill(s3Express.putRequests, max(q(1, u.one), ceil(r.bytes.div(partSize))).mul(q(1, u.req))),
           bill(s3Express.upload, r.bytes),
         ],
       })),
@@ -114,7 +114,7 @@ doc({
   ],
   returns: 'An offering, with `placementOf(bucket)` = `singleAz`.',
   guidance: `
-- **Requests:** \`put({ bytes })\` bills \`ceil(bytes / partSize)\` PUT requests ($0.00113 per 1,000) plus \`bytes\` of upload ($0.0032/GB). \`get({ bytes })\` bills one GET request ($0.00003 per 1,000) plus \`bytes\` of retrieval ($0.0006/GB).
+- **Requests:** \`put({ bytes })\` bills \`max(1, ceil(bytes / partSize))\` PUT requests ($0.00113 per 1,000) plus \`bytes\` of upload ($0.0032/GB). \`get({ bytes })\` bills one GET request ($0.00003 per 1,000) plus \`bytes\` of retrieval ($0.0006/GB).
 - **Gauge:** \`stored\` (bytes), billed at $0.11/GB-month.
 - Data lives in one AZ, but the engine doesn't read placement: add an \`edge\` for clients in other AZs if cross-AZ transfer matters.`,
   examples: [

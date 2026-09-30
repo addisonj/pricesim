@@ -1,0 +1,486 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "pricesim evaluation result",
+  "description": "Output of `pricesim eval --json` (and of `roundResult(evaluate(scenario))`), schema version 1. Costs are USD per month; usage is per month in each dimension's usage unit; pool resource stats are in base units (millicore, byte, byte/s).",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "scenario",
+    "region",
+    "reportUnit",
+    "period",
+    "total",
+    "used",
+    "idle",
+    "fixed",
+    "tree",
+    "dimensions",
+    "pools"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "description": "Version of this schema. Optional until the CLI emits it; when present it must be 1.",
+      "const": 1
+    },
+    "scenario": {
+      "type": "string",
+      "description": "Scenario name."
+    },
+    "description": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string",
+      "description": "Pricing region, e.g. us-east-1."
+    },
+    "reportUnit": {
+      "const": "USD/month"
+    },
+    "period": {
+      "type": "object",
+      "required": ["hours", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "hours": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Length of the modeled period."
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of evaluation steps."
+        }
+      }
+    },
+    "total": {
+      "type": "number",
+      "description": "used + idle + fixed."
+    },
+    "used": {
+      "type": "number",
+      "description": "Cost driven by requests and gauges."
+    },
+    "idle": {
+      "type": "number",
+      "description": "Provisioned but unused capacity (minimum-size tax, headroom, off-peak)."
+    },
+    "fixed": {
+      "type": "number",
+      "description": "Time-based base charges."
+    },
+    "tree": {
+      "$ref": "#/$defs/costNode"
+    },
+    "dimensions": {
+      "description": "One entry per billing dimension, most expensive first.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dimensionCost"
+      }
+    },
+    "pools": {
+      "description": "Sizing of every capacity pool reachable from the root.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/poolReport"
+      }
+    },
+    "tenants": {
+      "description": "Multi-tenant scenarios only: cost per tenant.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/tenantCost"
+      }
+    },
+    "accounts": {
+      "type": "array",
+      "description": "Cost per account (payer), when charges land on more than one account.",
+      "items": {
+        "$ref": "#/$defs/accountCost"
+      }
+    },
+    "revenue": {
+      "description": "With a price book: revenue, the provider's cost and margin in total, per meter and per customer (USD/month).",
+      "$ref": "#/$defs/revenueResult"
+    }
+  },
+  "$defs": {
+    "costNode": {
+      "type": "object",
+      "required": ["name", "kind", "cost", "share"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "root",
+            "dimension",
+            "service",
+            "offering",
+            "request",
+            "gauges",
+            "gauge",
+            "pool",
+            "idle",
+            "network",
+            "fixed",
+            "tenant",
+            "account"
+          ]
+        },
+        "cost": {
+          "type": "number",
+          "description": "USD/month, summed over the subtree."
+        },
+        "share": {
+          "type": "number",
+          "description": "Fraction of the scenario total."
+        },
+        "usage": {
+          "type": "number",
+          "description": "Dimension nodes only: monthly usage in `unit`."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Dimension nodes only: the dimension's usage unit."
+        },
+        "children": {
+          "description": "Absent on leaves; sorted by cost, descending.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/costNode"
+          }
+        }
+      }
+    },
+    "dimensionCost": {
+      "type": "object",
+      "required": ["id", "family", "usage", "unit", "listCost", "cost", "effectiveRate"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Billing dimension id, e.g. aws.s3.standard.storage."
+        },
+        "family": {
+          "type": "string",
+          "description": "Discount family, e.g. aws.ec2.compute."
+        },
+        "usage": {
+          "type": "number",
+          "description": "Monthly usage in `unit`."
+        },
+        "unit": {
+          "type": "string"
+        },
+        "listCost": {
+          "type": "number",
+          "description": "Cost from the price schedule, before region multiplier and discounts."
+        },
+        "cost": {
+          "type": "number"
+        },
+        "effectiveRate": {
+          "type": "number",
+          "description": "USD per `unit` after tiers, region multiplier and discounts."
+        },
+        "source": {
+          "type": "string",
+          "description": "URL the rate was read from."
+        },
+        "account": {
+          "type": "string",
+          "description": "The payer, when the scenario bills to more than one account."
+        }
+      }
+    },
+    "resourceStats": {
+      "type": "object",
+      "required": ["peak", "mean", "capacity"],
+      "additionalProperties": false,
+      "properties": {
+        "peak": {
+          "type": "number",
+          "description": "Peak demand over the period (base units)."
+        },
+        "mean": {
+          "type": "number",
+          "description": "Mean demand over the period (base units)."
+        },
+        "capacity": {
+          "type": "number",
+          "description": "Provisioned capacity (for pods: requested)."
+        }
+      }
+    },
+    "poolReport": {
+      "type": "object",
+      "required": ["name", "kind", "count", "min", "binding", "resources"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": ["instances", "pods", "nodes"]
+        },
+        "instance": {
+          "type": "string",
+          "description": "Instance type (instances and nodes)."
+        },
+        "nodePool": {
+          "type": "string",
+          "description": "Node pool the pods run on (pods)."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Provisioned instances, replicas or nodes."
+        },
+        "min": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "binding": {
+          "type": "string",
+          "description": "What determined the count: a resource (built-in cpu, memory, network, ebsBandwidth, ebsIops, disk, or a custom resource the pool declares), 'min' or 'maxPods'."
+        },
+        "resources": {
+          "type": "object",
+          "description": "Stats per resource, including custom resources the pool declares.",
+          "additionalProperties": {
+            "$ref": "#/$defs/resourceStats"
+          },
+          "properties": {
+            "cpu": {
+              "$ref": "#/$defs/resourceStats"
+            },
+            "memory": {
+              "$ref": "#/$defs/resourceStats"
+            },
+            "network": {
+              "$ref": "#/$defs/resourceStats"
+            },
+            "ebsBandwidth": {
+              "$ref": "#/$defs/resourceStats"
+            },
+            "ebsIops": {
+              "$ref": "#/$defs/resourceStats"
+            },
+            "disk": {
+              "$ref": "#/$defs/resourceStats"
+            }
+          }
+        }
+      }
+    },
+    "tenantCost": {
+      "type": "object",
+      "required": ["id", "used", "idleShare", "fixedShare", "total"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "used": {
+          "type": "number",
+          "description": "Cost driven by this tenant's requests and gauges."
+        },
+        "idleShare": {
+          "type": "number",
+          "description": "Share of idle cost, in proportion to used cost."
+        },
+        "fixedShare": {
+          "type": "number",
+          "description": "Share of fixed charges, in proportion to used cost."
+        },
+        "total": {
+          "type": "number",
+          "description": "used + idleShare + fixedShare."
+        }
+      }
+    },
+    "accountCost": {
+      "type": "object",
+      "required": ["name", "total", "used", "idle", "fixed"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "total": {
+          "type": "number"
+        },
+        "used": {
+          "type": "number"
+        },
+        "idle": {
+          "type": "number"
+        },
+        "fixed": {
+          "type": "number"
+        }
+      }
+    },
+    "revenueResult": {
+      "type": "object",
+      "required": [
+        "priceBook",
+        "revenue",
+        "cost",
+        "margin",
+        "marginRate",
+        "lines",
+        "meters",
+        "unallocated",
+        "customers"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "priceBook": {
+          "type": "string"
+        },
+        "revenue": {
+          "type": "number"
+        },
+        "cost": {
+          "type": "number",
+          "description": "The provider's cost; costs billed to other accounts are excluded."
+        },
+        "margin": {
+          "type": "number"
+        },
+        "marginRate": {
+          "type": ["number", "null"],
+          "description": "margin / revenue; null without revenue."
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/revenueLine"
+          }
+        },
+        "meters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/meterMargin"
+          }
+        },
+        "unallocated": {
+          "type": "number"
+        },
+        "customers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/customerRevenue"
+          }
+        }
+      }
+    },
+    "revenueLine": {
+      "type": "object",
+      "required": ["name", "kind", "amount"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": ["charge", "discount", "fee", "minimum"]
+        },
+        "meter": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Metered quantity in the meter's unit (charges)."
+        },
+        "unit": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number",
+          "description": "USD/month; negative for discounts."
+        },
+        "net": {
+          "type": "number",
+          "description": "Charges: the amount after the discounts that cover it."
+        }
+      }
+    },
+    "meterMargin": {
+      "type": "object",
+      "required": ["name", "quantity", "unit", "revenue", "cost", "margin"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "revenue": {
+          "type": "number",
+          "description": "Revenue from the charges on this meter, after discounts."
+        },
+        "cost": {
+          "type": "number",
+          "description": "Provider cost attributed to the meter."
+        },
+        "margin": {
+          "type": "number"
+        }
+      }
+    },
+    "customerRevenue": {
+      "type": "object",
+      "required": ["id", "plan", "revenue", "cost", "margin", "marginRate", "lines", "meters", "unallocated"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "plan": {
+          "type": "object",
+          "description": "The customer's value for every option."
+        },
+        "revenue": {
+          "type": "number"
+        },
+        "cost": {
+          "type": "number"
+        },
+        "margin": {
+          "type": "number"
+        },
+        "marginRate": {
+          "type": ["number", "null"],
+          "description": "margin / revenue; null without revenue."
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/revenueLine"
+          }
+        },
+        "meters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/meterMargin"
+          }
+        },
+        "unallocated": {
+          "type": "number",
+          "description": "Provider cost no meter covers (idle, fixed, unmetered requests and gauges)."
+        }
+      }
+    }
+  }
+}

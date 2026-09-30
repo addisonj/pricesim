@@ -1,0 +1,1026 @@
+{
+  "schemaVersion": 1,
+  "scenario": "orders-platform",
+  "description": "orders service (3 APIs) on its own node pool; DynamoDB + S3; inventory and ledger (Aurora) on a shared node pool",
+  "region": "us-east-1",
+  "reportUnit": "USD/month",
+  "period": {
+    "hours": 730,
+    "steps": 730
+  },
+  "total": 4815.88,
+  "used": 3530.91,
+  "idle": 1284.96,
+  "fixed": 0,
+  "tree": {
+    "name": "orders-platform",
+    "kind": "root",
+    "cost": 4815.88,
+    "share": 1,
+    "children": [
+      {
+        "name": "orders",
+        "kind": "service",
+        "cost": 3530.91,
+        "share": 0.733182,
+        "children": [
+          {
+            "name": "createOrder",
+            "kind": "request",
+            "cost": 2296.31,
+            "share": 0.47682,
+            "children": [
+              {
+                "name": "dynamodb:orders",
+                "kind": "offering",
+                "cost": 975.85,
+                "share": 0.202632,
+                "children": [
+                  {
+                    "name": "write",
+                    "kind": "request",
+                    "cost": 975.85,
+                    "share": 0.202632,
+                    "children": [
+                      {
+                        "name": "aws.dynamodb.ondemand.wru",
+                        "kind": "dimension",
+                        "cost": 975.85,
+                        "share": 0.202632,
+                        "usage": 1561360000,
+                        "unit": "op"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "ledger",
+                "kind": "service",
+                "cost": 675.627,
+                "share": 0.140292,
+                "children": [
+                  {
+                    "name": "record",
+                    "kind": "request",
+                    "cost": 675.627,
+                    "share": 0.140292,
+                    "children": [
+                      {
+                        "name": "aurora-postgresql:ledger",
+                        "kind": "offering",
+                        "cost": 669.433,
+                        "share": 0.139005,
+                        "children": [
+                          {
+                            "name": "query",
+                            "kind": "request",
+                            "cost": 669.433,
+                            "share": 0.139005,
+                            "children": [
+                              {
+                                "name": "aws.aurora.io",
+                                "kind": "dimension",
+                                "cost": 624.544,
+                                "share": 0.129684,
+                                "usage": 3122720000,
+                                "unit": "op"
+                              },
+                              {
+                                "name": "aurora:ledger",
+                                "kind": "pool",
+                                "cost": 44.8891,
+                                "share": 0.00932107,
+                                "children": [
+                                  {
+                                    "name": "aws.aurora-postgresql.db.r7g.large.hours",
+                                    "kind": "dimension",
+                                    "cost": 44.8891,
+                                    "share": 0.00932107,
+                                    "usage": 162.642,
+                                    "unit": "hour"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "ledger",
+                        "kind": "pool",
+                        "cost": 6.1934,
+                        "share": 0.00128604,
+                        "children": [
+                          {
+                            "name": "aws.ec2.m7g.xlarge.hours",
+                            "kind": "dimension",
+                            "cost": 6.1934,
+                            "share": 0.00128604,
+                            "usage": 37.9497,
+                            "unit": "hour"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "s3:receipts",
+                "kind": "offering",
+                "cost": 585.51,
+                "share": 0.121579,
+                "children": [
+                  {
+                    "name": "put",
+                    "kind": "request",
+                    "cost": 585.51,
+                    "share": 0.121579,
+                    "children": [
+                      {
+                        "name": "aws.s3.standard.put",
+                        "kind": "dimension",
+                        "cost": 585.51,
+                        "share": 0.121579,
+                        "usage": 117102000,
+                        "unit": "req"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "cross-az",
+                "kind": "network",
+                "cost": 31.2272,
+                "share": 0.00648422,
+                "children": [
+                  {
+                    "name": "aws.transfer.inter-az",
+                    "kind": "dimension",
+                    "cost": 31.2272,
+                    "share": 0.00648422,
+                    "usage": 3122.72,
+                    "unit": "GB"
+                  }
+                ]
+              },
+              {
+                "name": "orders-api",
+                "kind": "pool",
+                "cost": 24.3312,
+                "share": 0.00505229,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.2xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 24.3312,
+                    "share": 0.00505229,
+                    "usage": 74.5441,
+                    "unit": "hour"
+                  }
+                ]
+              },
+              {
+                "name": "inventory",
+                "kind": "service",
+                "cost": 3.76028,
+                "share": 0.000780808,
+                "children": [
+                  {
+                    "name": "reserve",
+                    "kind": "request",
+                    "cost": 3.76028,
+                    "share": 0.000780808,
+                    "children": [
+                      {
+                        "name": "inventory",
+                        "kind": "pool",
+                        "cost": 3.76028,
+                        "share": 0.000780808,
+                        "children": [
+                          {
+                            "name": "aws.ec2.m7g.xlarge.hours",
+                            "kind": "dimension",
+                            "cost": 3.76028,
+                            "share": 0.000780808,
+                            "usage": 23.0409,
+                            "unit": "hour"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "gauges",
+            "kind": "gauges",
+            "cost": 482.71,
+            "share": 0.100233,
+            "children": [
+              {
+                "name": "dynamodb:orders",
+                "kind": "offering",
+                "cost": 378.743,
+                "share": 0.0786447,
+                "children": [
+                  {
+                    "name": "gauges",
+                    "kind": "gauges",
+                    "cost": 378.743,
+                    "share": 0.0786447,
+                    "children": [
+                      {
+                        "name": "stored",
+                        "kind": "gauge",
+                        "cost": 378.743,
+                        "share": 0.0786447,
+                        "children": [
+                          {
+                            "name": "aws.dynamodb.storage",
+                            "kind": "dimension",
+                            "cost": 378.743,
+                            "share": 0.0786447,
+                            "usage": 1539.97,
+                            "unit": "GB*month"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "s3:receipts",
+                "kind": "offering",
+                "cost": 53.129,
+                "share": 0.0110321,
+                "children": [
+                  {
+                    "name": "gauges",
+                    "kind": "gauges",
+                    "cost": 53.129,
+                    "share": 0.0110321,
+                    "children": [
+                      {
+                        "name": "stored",
+                        "kind": "gauge",
+                        "cost": 53.129,
+                        "share": 0.0110321,
+                        "children": [
+                          {
+                            "name": "aws.s3.standard.storage",
+                            "kind": "dimension",
+                            "cost": 53.129,
+                            "share": 0.0110321,
+                            "usage": 2309.96,
+                            "unit": "GB*month"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "inventory",
+                "kind": "service",
+                "cost": 27.7385,
+                "share": 0.00575981,
+                "children": [
+                  {
+                    "name": "gauges",
+                    "kind": "gauges",
+                    "cost": 27.7385,
+                    "share": 0.00575981,
+                    "children": [
+                      {
+                        "name": "memory",
+                        "kind": "gauge",
+                        "cost": 27.7385,
+                        "share": 0.00575981,
+                        "children": [
+                          {
+                            "name": "inventory",
+                            "kind": "pool",
+                            "cost": 27.7385,
+                            "share": 0.00575981,
+                            "children": [
+                              {
+                                "name": "aws.ec2.m7g.xlarge.hours",
+                                "kind": "dimension",
+                                "cost": 27.7385,
+                                "share": 0.00575981,
+                                "usage": 169.966,
+                                "unit": "hour"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "ledger",
+                "kind": "service",
+                "cost": 23.0996,
+                "share": 0.00479655,
+                "children": [
+                  {
+                    "name": "gauges",
+                    "kind": "gauges",
+                    "cost": 23.0996,
+                    "share": 0.00479655,
+                    "children": [
+                      {
+                        "name": "aurora-postgresql:ledger",
+                        "kind": "offering",
+                        "cost": 23.0996,
+                        "share": 0.00479655,
+                        "children": [
+                          {
+                            "name": "gauges",
+                            "kind": "gauges",
+                            "cost": 23.0996,
+                            "share": 0.00479655,
+                            "children": [
+                              {
+                                "name": "stored",
+                                "kind": "gauge",
+                                "cost": 23.0996,
+                                "share": 0.00479655,
+                                "children": [
+                                  {
+                                    "name": "aws.aurora.storage",
+                                    "kind": "dimension",
+                                    "cost": 23.0996,
+                                    "share": 0.00479655,
+                                    "usage": 230.996,
+                                    "unit": "GB*month"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "getOrder",
+            "kind": "request",
+            "cost": 394.762,
+            "share": 0.081971,
+            "children": [
+              {
+                "name": "dynamodb:orders",
+                "kind": "offering",
+                "cost": 195.556,
+                "share": 0.0406065,
+                "children": [
+                  {
+                    "name": "read",
+                    "kind": "request",
+                    "cost": 195.556,
+                    "share": 0.0406065,
+                    "children": [
+                      {
+                        "name": "aws.dynamodb.ondemand.rru",
+                        "kind": "dimension",
+                        "cost": 195.556,
+                        "share": 0.0406065,
+                        "usage": 1564450000,
+                        "unit": "op"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "cross-az",
+                "kind": "network",
+                "cost": 83.4372,
+                "share": 0.0173255,
+                "children": [
+                  {
+                    "name": "aws.transfer.inter-az",
+                    "kind": "dimension",
+                    "cost": 83.4372,
+                    "share": 0.0173255,
+                    "usage": 8343.72,
+                    "unit": "GB"
+                  }
+                ]
+              },
+              {
+                "name": "s3:receipts",
+                "kind": "offering",
+                "cost": 62.5779,
+                "share": 0.0129941,
+                "children": [
+                  {
+                    "name": "get",
+                    "kind": "request",
+                    "cost": 62.5779,
+                    "share": 0.0129941,
+                    "children": [
+                      {
+                        "name": "aws.s3.standard.get",
+                        "kind": "dimension",
+                        "cost": 62.5779,
+                        "share": 0.0129941,
+                        "usage": 156445000,
+                        "unit": "req"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "orders-api",
+                "kind": "pool",
+                "cost": 53.1912,
+                "share": 0.011045,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.2xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 53.1912,
+                    "share": 0.011045,
+                    "usage": 162.963,
+                    "unit": "hour"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "listOrders",
+            "kind": "request",
+            "cost": 357.135,
+            "share": 0.0741579,
+            "children": [
+              {
+                "name": "ledger",
+                "kind": "service",
+                "cost": 183.685,
+                "share": 0.0381416,
+                "children": [
+                  {
+                    "name": "balance",
+                    "kind": "request",
+                    "cost": 183.685,
+                    "share": 0.0381416,
+                    "children": [
+                      {
+                        "name": "aurora-postgresql:ledger",
+                        "kind": "offering",
+                        "cost": 182.506,
+                        "share": 0.0378967,
+                        "children": [
+                          {
+                            "name": "query",
+                            "kind": "request",
+                            "cost": 182.506,
+                            "share": 0.0378967,
+                            "children": [
+                              {
+                                "name": "aws.aurora.io",
+                                "kind": "dimension",
+                                "cost": 166.545,
+                                "share": 0.0345825,
+                                "usage": 832725000,
+                                "unit": "op"
+                              },
+                              {
+                                "name": "aurora:ledger",
+                                "kind": "pool",
+                                "cost": 15.9606,
+                                "share": 0.00331416,
+                                "children": [
+                                  {
+                                    "name": "aws.aurora-postgresql.db.r7g.large.hours",
+                                    "kind": "dimension",
+                                    "cost": 15.9606,
+                                    "share": 0.00331416,
+                                    "usage": 57.8282,
+                                    "unit": "hour"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "ledger",
+                        "kind": "pool",
+                        "cost": 1.17969,
+                        "share": 0.000244959,
+                        "children": [
+                          {
+                            "name": "aws.ec2.m7g.xlarge.hours",
+                            "kind": "dimension",
+                            "cost": 1.17969,
+                            "share": 0.000244959,
+                            "usage": 7.22852,
+                            "unit": "hour"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "dynamodb:orders",
+                "kind": "offering",
+                "cost": 91.0793,
+                "share": 0.0189123,
+                "children": [
+                  {
+                    "name": "query",
+                    "kind": "request",
+                    "cost": 91.0793,
+                    "share": 0.0189123,
+                    "children": [
+                      {
+                        "name": "aws.dynamodb.ondemand.rru",
+                        "kind": "dimension",
+                        "cost": 91.0793,
+                        "share": 0.0189123,
+                        "usage": 728635000,
+                        "unit": "op"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "cross-az",
+                "kind": "network",
+                "cost": 69.3938,
+                "share": 0.0144094,
+                "children": [
+                  {
+                    "name": "aws.transfer.inter-az",
+                    "kind": "dimension",
+                    "cost": 69.3938,
+                    "share": 0.0144094,
+                    "usage": 6939.38,
+                    "unit": "GB"
+                  }
+                ]
+              },
+              {
+                "name": "orders-api",
+                "kind": "pool",
+                "cost": 12.9766,
+                "share": 0.00269455,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.2xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 12.9766,
+                    "share": 0.00269455,
+                    "usage": 39.7569,
+                    "unit": "hour"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "idle",
+        "kind": "idle",
+        "cost": 1284.96,
+        "share": 0.266818,
+        "children": [
+          {
+            "name": "orders-nodes",
+            "kind": "pool",
+            "cost": 624.317,
+            "share": 0.129637,
+            "children": [
+              {
+                "name": "node slack",
+                "kind": "idle",
+                "cost": 381.235,
+                "share": 0.0791622,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.2xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 381.235,
+                    "share": 0.0791622,
+                    "usage": 1168,
+                    "unit": "hour"
+                  }
+                ]
+              },
+              {
+                "name": "pod headroom: orders-api",
+                "kind": "idle",
+                "cost": 207.341,
+                "share": 0.0430536,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.2xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 207.341,
+                    "share": 0.0430536,
+                    "usage": 635.236,
+                    "unit": "hour"
+                  }
+                ]
+              },
+              {
+                "name": "system overhead",
+                "kind": "idle",
+                "cost": 35.7408,
+                "share": 0.00742145,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.2xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 35.7408,
+                    "share": 0.00742145,
+                    "usage": 109.5,
+                    "unit": "hour"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "aurora:ledger",
+            "kind": "pool",
+            "cost": 342.11,
+            "share": 0.071038,
+            "children": [
+              {
+                "name": "headroom",
+                "kind": "idle",
+                "cost": 342.11,
+                "share": 0.071038,
+                "children": [
+                  {
+                    "name": "aws.aurora-postgresql.db.r7g.large.hours",
+                    "kind": "dimension",
+                    "cost": 342.11,
+                    "share": 0.071038,
+                    "usage": 1239.53,
+                    "unit": "hour"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "shared-nodes",
+            "kind": "pool",
+            "cost": 318.536,
+            "share": 0.0661429,
+            "children": [
+              {
+                "name": "node slack",
+                "kind": "idle",
+                "cost": 187.639,
+                "share": 0.0389626,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 187.639,
+                    "share": 0.0389626,
+                    "usage": 1149.75,
+                    "unit": "hour"
+                  }
+                ]
+              },
+              {
+                "name": "pod headroom: inventory",
+                "kind": "idle",
+                "cost": 72.7452,
+                "share": 0.0151053,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 72.7452,
+                    "share": 0.0151053,
+                    "usage": 445.743,
+                    "unit": "hour"
+                  }
+                ]
+              },
+              {
+                "name": "system overhead",
+                "kind": "idle",
+                "cost": 35.7408,
+                "share": 0.00742145,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 35.7408,
+                    "share": 0.00742145,
+                    "usage": 219,
+                    "unit": "hour"
+                  }
+                ]
+              },
+              {
+                "name": "pod headroom: ledger",
+                "kind": "idle",
+                "cost": 22.4109,
+                "share": 0.00465355,
+                "children": [
+                  {
+                    "name": "aws.ec2.m7g.xlarge.hours",
+                    "kind": "dimension",
+                    "cost": 22.4109,
+                    "share": 0.00465355,
+                    "usage": 137.322,
+                    "unit": "hour"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dimensions": [
+    {
+      "id": "aws.dynamodb.ondemand.wru",
+      "family": "aws.dynamodb",
+      "usage": 1561360000,
+      "unit": "op",
+      "listCost": 975.85,
+      "cost": 975.85,
+      "effectiveRate": 6.25e-7,
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/dynamodb/USD/current/dynamodb.json"
+    },
+    {
+      "id": "aws.aurora.io",
+      "family": "aws.rds",
+      "usage": 3955450000,
+      "unit": "op",
+      "listCost": 791.089,
+      "cost": 791.089,
+      "effectiveRate": 2e-7,
+      "source": "https://aws.amazon.com/rds/aurora/pricing/"
+    },
+    {
+      "id": "aws.ec2.m7g.2xlarge.hours",
+      "family": "aws.ec2.compute",
+      "usage": 2190,
+      "unit": "hour",
+      "listCost": 714.816,
+      "cost": 714.816,
+      "effectiveRate": 0.3264,
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ec2-ondemand-without-sec-sel/US%20East%20(N.%20Virginia)/Linux/index.json"
+    },
+    {
+      "id": "aws.s3.standard.put",
+      "family": "aws.s3",
+      "usage": 117102000,
+      "unit": "req",
+      "listCost": 585.51,
+      "cost": 585.51,
+      "effectiveRate": 0.000005,
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/s3/USD/current/s3.json"
+    },
+    {
+      "id": "aws.aurora-postgresql.db.r7g.large.hours",
+      "family": "aws.rds",
+      "usage": 1460,
+      "unit": "hour",
+      "listCost": 402.96,
+      "cost": 402.96,
+      "effectiveRate": 0.276,
+      "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/us-east-1/index.csv"
+    },
+    {
+      "id": "aws.dynamodb.storage",
+      "family": "aws.dynamodb",
+      "usage": 1539.97,
+      "unit": "GB*month",
+      "listCost": 378.743,
+      "cost": 378.743,
+      "effectiveRate": 0.245941,
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/dynamodb/USD/current/dynamodb.json"
+    },
+    {
+      "id": "aws.ec2.m7g.xlarge.hours",
+      "family": "aws.ec2.compute",
+      "usage": 2190,
+      "unit": "hour",
+      "listCost": 357.408,
+      "cost": 357.408,
+      "effectiveRate": 0.1632,
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ec2-ondemand-without-sec-sel/US%20East%20(N.%20Virginia)/Linux/index.json"
+    },
+    {
+      "id": "aws.dynamodb.ondemand.rru",
+      "family": "aws.dynamodb",
+      "usage": 2293080000,
+      "unit": "op",
+      "listCost": 286.635,
+      "cost": 286.635,
+      "effectiveRate": 1.25e-7,
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/dynamodb/USD/current/dynamodb.json"
+    },
+    {
+      "id": "aws.transfer.inter-az",
+      "family": "aws.transfer.inter-az",
+      "usage": 18405.8,
+      "unit": "GB",
+      "listCost": 184.058,
+      "cost": 184.058,
+      "effectiveRate": 0.01,
+      "source": "https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer_within_the_same_AWS_Region"
+    },
+    {
+      "id": "aws.s3.standard.get",
+      "family": "aws.s3",
+      "usage": 156445000,
+      "unit": "req",
+      "listCost": 62.5779,
+      "cost": 62.5779,
+      "effectiveRate": 4e-7,
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/s3/USD/current/s3.json"
+    },
+    {
+      "id": "aws.s3.standard.storage",
+      "family": "aws.s3",
+      "usage": 2309.96,
+      "unit": "GB*month",
+      "listCost": 53.129,
+      "cost": 53.129,
+      "effectiveRate": 0.023,
+      "source": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/s3/USD/current/s3.json"
+    },
+    {
+      "id": "aws.aurora.storage",
+      "family": "aws.rds",
+      "usage": 230.996,
+      "unit": "GB*month",
+      "listCost": 23.0996,
+      "cost": 23.0996,
+      "effectiveRate": 0.1,
+      "source": "https://aws.amazon.com/rds/aurora/pricing/"
+    }
+  ],
+  "pools": [
+    {
+      "name": "aurora:ledger",
+      "kind": "instances",
+      "instance": "db.r7g.large",
+      "count": 2,
+      "min": 2,
+      "binding": "cpu",
+      "resources": {
+        "cpu": {
+          "peak": 1214.78,
+          "mean": 604.027,
+          "capacity": 4000
+        },
+        "memory": {
+          "peak": 0,
+          "mean": 0,
+          "capacity": 34359738368
+        },
+        "network": {
+          "peak": 0,
+          "mean": 0,
+          "capacity": 234250000
+        },
+        "ebsBandwidth": {
+          "peak": 0,
+          "mean": 0,
+          "capacity": 157500000
+        },
+        "ebsIops": {
+          "peak": 0,
+          "mean": 0,
+          "capacity": 7200
+        }
+      }
+    },
+    {
+      "name": "orders-api",
+      "kind": "pods",
+      "nodePool": "orders-nodes",
+      "count": 10,
+      "min": 3,
+      "binding": "cpu",
+      "resources": {
+        "cpu": {
+          "peak": 5746.86,
+          "mean": 3038.51,
+          "capacity": 10000
+        },
+        "memory": {
+          "peak": 0,
+          "mean": 0,
+          "capacity": 21474836480
+        }
+      }
+    },
+    {
+      "name": "inventory",
+      "kind": "pods",
+      "nodePool": "shared-nodes",
+      "count": 7,
+      "min": 2,
+      "binding": "memory",
+      "resources": {
+        "cpu": {
+          "peak": 253.909,
+          "mean": 126.252,
+          "capacity": 3500
+        },
+        "memory": {
+          "peak": 4000000000,
+          "mean": 4000000000,
+          "capacity": 7516192768
+        }
+      }
+    },
+    {
+      "name": "ledger",
+      "kind": "pods",
+      "nodePool": "shared-nodes",
+      "count": 2,
+      "min": 2,
+      "binding": "cpu",
+      "resources": {
+        "cpu": {
+          "peak": 497.861,
+          "mean": 247.552,
+          "capacity": 1000
+        },
+        "memory": {
+          "peak": 0,
+          "mean": 0,
+          "capacity": 2147483648
+        }
+      }
+    },
+    {
+      "name": "orders-nodes",
+      "kind": "nodes",
+      "instance": "m7g.2xlarge",
+      "count": 3,
+      "min": 3,
+      "binding": "min",
+      "resources": {
+        "cpu": {
+          "peak": 10000,
+          "mean": 10000,
+          "capacity": 24000
+        },
+        "memory": {
+          "peak": 21474836480,
+          "mean": 21474836480,
+          "capacity": 103079215104
+        }
+      }
+    },
+    {
+      "name": "shared-nodes",
+      "kind": "nodes",
+      "instance": "m7g.xlarge",
+      "count": 3,
+      "min": 3,
+      "binding": "min",
+      "resources": {
+        "cpu": {
+          "peak": 4500,
+          "mean": 4500,
+          "capacity": 12000
+        },
+        "memory": {
+          "peak": 9663676416,
+          "mean": 9663676416,
+          "capacity": 51539607552
+        }
+      }
+    }
+  ]
+}

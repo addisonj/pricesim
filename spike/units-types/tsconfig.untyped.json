@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.base.json", "compilerOptions": { "paths": { "#dim": ["./src/dim-untyped.ts"], "#core": ["./src/core.ts"] }, "allowImportingTsExtensions": true }, "files": ["src/model.ts"] }

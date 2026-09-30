@@ -1,0 +1,7 @@
+{
+  "name": "pricesim",
+  "description": "Skills for building cost models with pricesim and using them for pricing: model authoring, analysis, and price books. The skills defer to the self-documenting pricesim CLI for details.",
+  "author": {
+    "name": "Addison Higham"
+  }
+}

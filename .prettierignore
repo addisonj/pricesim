@@ -1,0 +1,8 @@
+spike/
+pnpm-lock.yaml
+src/**/*.gen.ts
+DESIGN.md
+examples/*.expected.json
+PLAN.md
+.claude/
+docs/api.md

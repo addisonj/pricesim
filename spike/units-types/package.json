@@ -1,0 +1,12 @@
+{
+  "name": "units-types-spike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "node gen.mjs",
+    "typed": "tsc -p tsconfig.typed.json --extendedDiagnostics",
+    "untyped": "tsc -p tsconfig.untyped.json --extendedDiagnostics",
+    "errors": "tsc -p tsconfig.errors.json --pretty false"
+  },
+  "devDependencies": { "typescript": "^5.9.0", "tsx": "^4.20.0" }
+}

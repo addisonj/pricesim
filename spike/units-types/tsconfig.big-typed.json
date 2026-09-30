@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.base.json", "compilerOptions": { "paths": { "#dim": ["./src/dim-typed.ts"], "#core": ["./src/core.ts"] }, "allowImportingTsExtensions": true }, "files": ["src/big.ts"] }

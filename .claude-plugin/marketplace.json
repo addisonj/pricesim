@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "pricesim",
+  "description": "pricesim skills for Claude Code",
+  "owner": {
+    "name": "Addison Higham"
+  },
+  "plugins": [
+    {
+      "name": "pricesim",
+      "description": "Build cost models with pricesim, analyse them, and design price books.",
+      "source": "./"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+.price-cache/
+*.log
+spike/*/node_modules/
+.claude/
+test/.doc-examples-*/

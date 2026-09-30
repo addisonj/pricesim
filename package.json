@@ -1,0 +1,51 @@
+{
+  "name": "pricesim",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Model the COGS of workloads on cloud infrastructure: pricing catalog, composable services, time-varying workloads, cost trees and closed forms.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "pricesim": "./src/cli/main.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./units": "./src/core/units.ts",
+    "./expr": "./src/core/expr.ts",
+    "./model": "./src/model/index.ts",
+    "./workload": "./src/workload/index.ts",
+    "./eval": "./src/eval/index.ts",
+    "./aws": "./src/catalog/aws/index.ts",
+    "./aws/*": "./src/catalog/aws/*.ts",
+    "./docs": "./src/docs/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "gen:dim": "tsx scripts/gen-dim-tables.ts",
+    "gen:aws": "tsx scripts/fetch-aws-prices.ts",
+    "cli": "tsx src/cli/main.ts",
+    "check": "pnpm typecheck && pnpm test && pnpm format:check",
+    "gen:api": "tsx scripts/gen-api.ts"
+  },
+  "dependencies": {
+    "mathjs": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "prettier": "^3.6.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/addisonj/pricesim.git"
+  },
+  "homepage": "https://github.com/addisonj/pricesim"
+}

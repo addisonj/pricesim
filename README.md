@@ -98,9 +98,9 @@ pnpm unlink pricesim             # back to the pinned version
 
 ### Releases
 
-`pnpm release:patch` (or `release:minor`) runs the checks, bumps `package.json`, tags `vX.Y.Z` and pushes; the tag triggers `.github/workflows/release.yml`, which checks again and creates a GitHub release. Then `pnpm publish` puts it on npm.
+`pnpm release:patch` (or `release:minor`) runs the checks, bumps `package.json`, tags `vX.Y.Z` and pushes. The tag triggers `.github/workflows/release.yml`, which checks again, publishes to npm (trusted publishing: GitHub's OIDC token, no npm token; provenance attached) and creates a GitHub release.
 
-- **Publish with pnpm, not npm:** the repo's `exports` and `bin` point at the TypeScript sources (so the repo, `pnpm link` and git dependencies need no build), and `publishConfig` swaps in the compiled `dist/` when pnpm packs. `prepublishOnly` runs the checks and `pnpm build`.
+- **Packing is pnpm's job:** the repo's `exports` and `bin` point at the TypeScript sources (so the repo, `pnpm link` and git dependencies need no build), and `publishConfig` swaps in the compiled `dist/` when pnpm packs. The workflow publishes that tarball with npm. To publish by hand, use `pnpm publish` (it runs the checks and the build first), never plain `npm publish` from the repo.
 - The compiled CLI runs on plain Node and loads TypeScript model files with tsx's loader. CI packs the tarball, installs it with npm and runs the example.
 
 ## Layout

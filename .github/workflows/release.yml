@@ -1,13 +1,15 @@
 name: Release
 
-# Push a version tag (pnpm release:patch / release:minor bump package.json and tag it) to check the tree and
-# publish a GitHub release. npm publishing is `pnpm publish` (pnpm, not npm: publishConfig swaps in dist/).
+# Push a version tag (`pnpm release:patch` / `release:minor` bump package.json, tag and push) to check the tree,
+# publish to npm and create a GitHub release. npm authenticates this workflow by OIDC (trusted publishing,
+# configured on npmjs.com for release.yml), so there is no token; provenance is attached automatically.
 on:
   push:
     tags: ['v*']
 
 permissions:
-  contents: write
+  contents: write # the GitHub release
+  id-token: write # npm trusted publishing
 
 jobs:
   release:
@@ -19,10 +21,17 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+          registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - name: tag matches package.json
         run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
+      # pnpm packs (publishConfig swaps in dist/); npm publishes the tarball (trusted publishing needs npm >= 11.5.1)
+      - run: pnpm build
+      - run: pnpm pack --pack-destination "$RUNNER_TEMP"
+      - run: npm install -g npm@latest
+      - name: publish to npm
+        run: npm publish "$RUNNER_TEMP"/pricesim-*.tgz --access public
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

@@ -8,6 +8,8 @@ A model file is a TypeScript module whose **default export** (or export named `s
 
 ## Project setup
 
+`pricesim init <dir>` writes all of the below (add `--example` for a full worked example). By hand:
+
 ```sh
 mkdir my-model && cd my-model
 pnpm init

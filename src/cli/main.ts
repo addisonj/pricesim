@@ -5,6 +5,7 @@ import '../index.ts'
 import '../catalog/aws/index.ts'
 import { findCommand, renderDescribe, renderHelp } from './command.ts'
 import './model-commands.ts'
+import './init-command.ts'
 import { topLevelHelp } from './doc-commands.ts'
 import { fail } from './util.ts'
 

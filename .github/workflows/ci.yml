@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: typecheck, tests (incl. docs checks), format
+        run: pnpm check
+      - name: CLI smoke test
+        run: |
+          pnpm cli --help
+          pnpm cli eval examples/guide-example.ts
+          pnpm cli describe instancePool > /dev/null
+          pnpm cli guide overview > /dev/null
+      - name: init a project against this checkout, and evaluate it
+        run: |
+          pnpm cli init "$RUNNER_TEMP/demo" --pricesim "link:$GITHUB_WORKSPACE" --example
+          cd "$RUNNER_TEMP/demo"
+          pnpm install
+          pnpm check
+          pnpm exec pricesim eval model.ts
+      - name: docs/api.md is current
+        run: |
+          pnpm gen:api
+          git diff --exit-code docs/api.md

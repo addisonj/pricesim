@@ -1,6 +1,6 @@
 {
   "name": "pricesim",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Model the COGS of workloads on cloud infrastructure: pricing catalog, composable services, time-varying workloads, cost trees and closed forms.",
   "type": "module",
@@ -31,7 +31,10 @@
     "gen:aws": "tsx scripts/fetch-aws-prices.ts",
     "cli": "tsx src/cli/main.ts",
     "check": "pnpm typecheck && pnpm test && pnpm format:check",
-    "gen:api": "tsx scripts/gen-api.ts"
+    "gen:api": "tsx scripts/gen-api.ts",
+    "release:patch": "pnpm check && npm version patch -m \"v%s\" && git push --follow-tags",
+    "release:minor": "pnpm check && npm version minor -m \"v%s\" && git push --follow-tags",
+    "example": "tsx templates/example/report.ts"
   },
   "dependencies": {
     "mathjs": "^15.0.0"
@@ -47,5 +50,8 @@
     "type": "git",
     "url": "git+https://github.com/addisonj/pricesim.git"
   },
-  "homepage": "https://github.com/addisonj/pricesim"
+  "homepage": "https://github.com/addisonj/pricesim",
+  "license": "Apache-2.0",
+  "author": "Addison Higham",
+  "packageManager": "pnpm@12.5.1"
 }

@@ -18,6 +18,7 @@ import * as docsEntry from '../src/docs/index.ts'
 import { allDocs, findDoc } from '../src/docs/registry.ts'
 import { allCommands } from '../src/cli/command.ts'
 import '../src/cli/model-commands.ts'
+import '../src/cli/init-command.ts'
 import { loadGuides } from '../src/cli/doc-commands.ts'
 import { renderApiMarkdown } from '../scripts/gen-api.ts'
 

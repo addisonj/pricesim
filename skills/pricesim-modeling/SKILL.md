@@ -29,10 +29,11 @@ Run it as `npx pricesim …` in a project that depends on pricesim, or `pnpm cli
 
 ## Workflow
 
-1. Sketch the system: the root service and its request types, the capacity each uses, the cloud products it calls, what it stores (gauges).
-2. Start from `pricesim guide model-file`'s skeleton; add one component at a time, running `pricesim eval` each time.
-3. Write the workload from the user's numbers (rates, sizes, peak-to-mean, retention); derive stored data from rates with `retained(…)` so it scales in sweeps.
-4. Report the result with its assumptions (`pricesim guide analysis`).
+1. For a new project, start with `pricesim init <dir>` (`--example` shows most features in one model).
+2. Sketch the system: the root service and its request types, the capacity each uses, the cloud products it calls, what it stores (gauges).
+3. Start from the skeleton (`pricesim guide model-file`); add one component at a time, running `pricesim eval` each time.
+4. Write the workload from the user's numbers (rates, sizes, peak-to-mean, retention); derive stored data from rates with `retained(…)` so it scales in sweeps.
+5. Report the result with its assumptions (`pricesim guide analysis`).
 
 ## Example: adding a component
 

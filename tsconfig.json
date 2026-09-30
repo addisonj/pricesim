@@ -14,6 +14,6 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src", "test", "scripts", "examples"],
+  "include": ["src", "test", "scripts", "examples", "templates"],
   "exclude": ["spike"]
 }

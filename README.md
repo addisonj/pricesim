@@ -1,5 +1,7 @@
 # pricesim
 
+[![CI](https://github.com/addisonj/pricesim/actions/workflows/ci.yml/badge.svg)](https://github.com/addisonj/pricesim/actions/workflows/ci.yml)
+
 Model what software costs to run on cloud infrastructure, and what to charge for it. You describe a system as TypeScript (the requests it serves, the capacity each uses, the cloud products it bills) plus a workload, and pricesim sizes the capacity at peak, prices every line of the bill, and folds the cost into a tree. Add a price book to get revenue and margin, per meter and per customer.
 
 - **Units everywhere:** every quantity carries its unit, checked at compile time and at runtime.
@@ -10,12 +12,16 @@ Model what software costs to run on cloud infrastructure, and what to charge for
 ## Quickstart
 
 ```sh
-pnpm add github:addisonj/pricesim
-pnpm add -D typescript tsx @types/node
-pnpm exec pricesim guide overview
+npx github:addisonj/pricesim init my-model --example   # or, from a clone of this repo: pnpm cli init …
+cd my-model
+pnpm install
+pnpm exec pricesim eval model.ts    # cost tree, pools, revenue and margin
+pnpm report                         # price, cost and margin by customer size, and over a customer base
 ```
 
-Then follow `pricesim guide model-file` for a skeleton model, and run it with `pricesim eval model.ts`. [`docs/guide.md`](docs/guide.md) is a worked example with real output ([`examples/guide-example.ts`](examples/guide-example.ts)).
+`init` without `--example` writes a minimal skeleton instead. The worked example models an event-ingestion service (ALB → pods on a shared Kubernetes cluster → a replicated storage tier on EC2 → S3) with a price book and a simulated customer base. Inside this repo it's `pnpm cli eval templates/example/model.ts` and `pnpm example`. [`docs/guide.md`](docs/guide.md) is a second, step-by-step example with its output explained.
+
+To add pricesim to an existing project: `pnpm add github:addisonj/pricesim#v0.1.0` (plus `typescript`, `tsx`, `@types/node`).
 
 ## Documentation lives in the CLI
 
@@ -75,8 +81,24 @@ pnpm gen:aws        # refetch AWS prices and instance specs into src/catalog/aws
 
 Requires Node ≥ 22 and pnpm. pricesim ships TypeScript sources; run models with `tsx` (the CLI does).
 
+- **CI** (`.github/workflows/ci.yml`) runs `pnpm check` on Node 22 and 24, smoke-tests the CLI, runs `pricesim init --example` against the checkout and evaluates it, and checks `docs/api.md` is current.
 - **Result schema:** `pricesim eval --json` output is specified by [`schema/result.schema.json`](schema/result.schema.json) (JSON Schema 2020-12, version 1).
 - **Browser safety:** nothing under `src/` except `src/cli/` may import Node built-ins; `test/browser-safe.test.ts` enforces it.
+
+### Working on pricesim from a model
+
+Most changes come up while working on a model. Link the model to your checkout:
+
+```sh
+cd my-model
+pnpm link ~/path/to/pricesim     # adds an `overrides` entry to pnpm-workspace.yaml; don't commit it
+# edit pricesim, re-run the model: no build step, the model imports the TypeScript sources
+pnpm unlink pricesim             # back to the pinned version
+```
+
+### Releases
+
+`pnpm release:patch` (or `release:minor`) runs the checks, bumps `package.json`, tags `vX.Y.Z` and pushes. The tag triggers `.github/workflows/release.yml`, which checks again and creates a GitHub release with generated notes. Models pin a release with `github:addisonj/pricesim#vX.Y.Z`; there is no npm package (yet).
 
 ## Layout
 
@@ -90,6 +112,7 @@ src/revenue/   price books, revenue and margin
 src/catalog/   the AWS catalog (generated prices in *.gen.ts)
 src/docs/      the inline documentation registry
 src/cli/       the pricesim CLI and its command docs
+templates/     projects for pricesim init (minimal, example)
 guides/        pricesim guide topics
 skills/        Claude Code skills (.claude-plugin/ holds the plugin manifest)
 docs/          worked example (guide.md) and the generated API reference (api.md)
@@ -104,3 +127,7 @@ test/          vitest runtime tests (*.test.ts) and type tests (*.test-d.ts)
 - **Dimensionless factors:** number overloads, e.g. `.mul(3)`.
 - **Generated files** (`*.gen.ts`, `docs/api.md`) are checked in and never edited by hand.
 - **New exports** get a `doc({ … })` entry next to them; new commands are registered with `command({ … })`.
+
+## License
+
+[Apache-2.0](LICENSE).

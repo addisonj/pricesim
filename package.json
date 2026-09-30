@@ -1,6 +1,6 @@
 {
   "name": "pricesim",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Model the COGS of workloads on cloud infrastructure: pricing catalog, composable services, time-varying workloads, cost trees and closed forms.",
   "type": "module",
   "engines": {

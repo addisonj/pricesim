@@ -9,6 +9,7 @@ import { fail } from './util.ts'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
   version: string
+  dependencies: Record<string, string>
   devDependencies: Record<string, string>
 }
 
@@ -64,7 +65,7 @@ command({
     },
     {
       flag: '--pricesim <spec>',
-      doc: `The pricesim dependency (default github:addisonj/pricesim#v${pkg.version}); e.g. link:../pricesim for a local checkout.`,
+      doc: `The pricesim dependency (default ^${pkg.version} from npm); e.g. link:../pricesim for a local checkout, or github:addisonj/pricesim#main.`,
     },
     { flag: '--force', doc: 'Write into a non-empty directory (existing files with the same names are overwritten).' },
   ],
@@ -95,7 +96,7 @@ Writes \`package.json\` (pricesim, TypeScript and tsx), \`pnpm-workspace.yaml\` 
       basename(dir)
         .toLowerCase()
         .replace(/[^a-z0-9-]+/g, '-') || 'cost-model'
-    const spec = values.pricesim ?? `github:addisonj/pricesim#v${pkg.version}`
+    const spec = values.pricesim ?? `^${pkg.version}`
     const dev = pkg.devDependencies
     const files: Record<string, string> = {
       'package.json': JSON.stringify(
@@ -112,7 +113,7 @@ Writes \`package.json\` (pricesim, TypeScript and tsx), \`pnpm-workspace.yaml\` 
           dependencies: { pricesim: spec },
           devDependencies: {
             '@types/node': dev['@types/node']!,
-            tsx: dev.tsx!,
+            tsx: pkg.dependencies.tsx!,
             typescript: dev.typescript!,
           },
         },

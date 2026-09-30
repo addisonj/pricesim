@@ -14,7 +14,7 @@ A model file is a TypeScript module whose **default export** (or export named `s
 mkdir my-model && cd my-model
 pnpm init
 pnpm add pricesim            # or: pnpm add github:addisonj/pricesim
-pnpm add -D typescript tsx @types/node
+pnpm add -D typescript tsx @types/node   # typescript for the type check, tsx for your own scripts
 ```
 
 `package.json` needs `"type": "module"`. A `tsconfig.json` that works:
@@ -34,7 +34,7 @@ pnpm add -D typescript tsx @types/node
 }
 ```
 
-pricesim ships TypeScript sources, so run it with `tsx`: `pnpm exec pricesim eval model.ts`.
+Run models with the CLI (`pnpm exec pricesim eval model.ts`); it loads TypeScript model files itself. Use `tsx` for your own scripts that import the model (`tsx report.ts`).
 
 ## Skeleton
 

@@ -1,7 +1,7 @@
 name: Release
 
 # Push a version tag (pnpm release:patch / release:minor bump package.json and tag it) to check the tree and
-# publish a GitHub release. Consumers install a release with `pnpm add github:addisonj/pricesim#v0.2.0`.
+# publish a GitHub release. npm publishing is `pnpm publish` (pnpm, not npm: publishConfig swaps in dist/).
 on:
   push:
     tags: ['v*']

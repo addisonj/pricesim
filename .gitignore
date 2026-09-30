@@ -6,3 +6,4 @@ coverage/
 spike/*/node_modules/
 .claude/
 test/.doc-examples-*/
+dist/

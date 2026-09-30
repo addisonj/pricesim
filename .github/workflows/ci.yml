@@ -45,3 +45,30 @@ jobs:
         run: |
           pnpm gen:api
           git diff --exit-code docs/api.md
+
+  package:
+    name: npm package (packed, installed with npm, run on plain Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm pack --pack-destination "$RUNNER_TEMP"
+      - name: install the tarball, init the example, evaluate it
+        run: |
+          TGZ=$(ls "$RUNNER_TEMP"/pricesim-*.tgz)
+          mkdir "$RUNNER_TEMP/bootstrap" && cd "$RUNNER_TEMP/bootstrap"
+          npm init -y > /dev/null
+          npm install "$TGZ"
+          npx pricesim init "$RUNNER_TEMP/demo" --example --pricesim "file:$TGZ"
+          cd "$RUNNER_TEMP/demo"
+          npm install
+          npx tsc --noEmit
+          npx pricesim eval model.ts
+          npx pricesim describe instancePool > /dev/null
+          npm run report

@@ -23,12 +23,25 @@ export const typecheck = (modelPath: string) => {
     if (up === dir) return process.stderr.write('pricesim: no tsconfig.json found; skipping type check\n')
     dir = up
   }
-  const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc')
+  // the model project's TypeScript first, then pricesim's own (a dev checkout)
+  let tsc: string | undefined
+  for (const from of [join(dir, 'package.json'), import.meta.url]) {
+    try {
+      tsc = createRequire(from).resolve('typescript/bin/tsc')
+      break
+    } catch {}
+  }
+  if (!tsc) return process.stderr.write('pricesim: typescript is not installed; skipping type check\n')
   const r = spawnSync(process.execPath, [tsc, '--noEmit', '-p', join(dir, 'tsconfig.json')], { encoding: 'utf8' })
   if (r.status !== 0) fail(`type check failed:\n${r.stdout}${r.stderr}`)
 }
 
+/** The compiled CLI (dist/, as published) runs on plain Node: register tsx's loader to import TypeScript models. */
+let tsLoader: Promise<unknown> | undefined
+const loadTypeScript = () => (tsLoader ??= import('tsx/esm/api').then((m) => m.register()))
+
 export const loadScenario = async (modelPath: string): Promise<Scenario> => {
+  if (import.meta.url.endsWith('.js') && /\.[cm]?tsx?$/.test(modelPath)) await loadTypeScript()
   const mod = (await import(pathToFileURL(modelPath).href)) as { default?: Scenario; scenario?: Scenario }
   const s = mod.default ?? mod.scenario
   if (!s || typeof s !== 'object' || !('workload' in s || 'tenants' in s))

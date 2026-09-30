@@ -6,3 +6,4 @@ examples/*.expected.json
 PLAN.md
 .claude/
 docs/api.md
+dist/

@@ -1,7 +1,6 @@
 {
   "name": "pricesim",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
   "description": "Model the COGS of workloads on cloud infrastructure: pricing catalog, composable services, time-varying workloads, cost trees and closed forms.",
   "type": "module",
   "engines": {
@@ -34,15 +33,17 @@
     "gen:api": "tsx scripts/gen-api.ts",
     "release:patch": "pnpm check && npm version patch -m \"v%s\" && git push --follow-tags",
     "release:minor": "pnpm check && npm version minor -m \"v%s\" && git push --follow-tags",
-    "example": "tsx templates/example/report.ts"
+    "example": "tsx templates/example/report.ts",
+    "build": "tsx scripts/build.ts",
+    "prepublishOnly": "pnpm check && pnpm build"
   },
   "dependencies": {
-    "mathjs": "^15.0.0"
+    "mathjs": "^15.0.0",
+    "tsx": "^4.20.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "prettier": "^3.6.0",
-    "tsx": "^4.20.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"
   },
@@ -53,5 +54,70 @@
   "homepage": "https://github.com/addisonj/pricesim",
   "license": "Apache-2.0",
   "author": "Addison Higham",
-  "packageManager": "pnpm@12.5.1"
+  "packageManager": "pnpm@12.5.1",
+  "files": [
+    "dist",
+    "src",
+    "guides",
+    "templates",
+    "skills",
+    "schema",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./units": {
+        "types": "./dist/core/units.d.ts",
+        "import": "./dist/core/units.js"
+      },
+      "./expr": {
+        "types": "./dist/core/expr.d.ts",
+        "import": "./dist/core/expr.js"
+      },
+      "./model": {
+        "types": "./dist/model/index.d.ts",
+        "import": "./dist/model/index.js"
+      },
+      "./workload": {
+        "types": "./dist/workload/index.d.ts",
+        "import": "./dist/workload/index.js"
+      },
+      "./eval": {
+        "types": "./dist/eval/index.d.ts",
+        "import": "./dist/eval/index.js"
+      },
+      "./aws": {
+        "types": "./dist/catalog/aws/index.d.ts",
+        "import": "./dist/catalog/aws/index.js"
+      },
+      "./aws/*": {
+        "types": "./dist/catalog/aws/*.d.ts",
+        "import": "./dist/catalog/aws/*.js"
+      },
+      "./docs": {
+        "types": "./dist/docs/index.d.ts",
+        "import": "./dist/docs/index.js"
+      }
+    },
+    "bin": {
+      "pricesim": "./dist/cli/main.js"
+    }
+  },
+  "keywords": [
+    "cost",
+    "cogs",
+    "pricing",
+    "cloud",
+    "aws",
+    "finops",
+    "simulation",
+    "capacity-planning"
+  ]
 }

@@ -12,7 +12,7 @@ Model what software costs to run on cloud infrastructure, and what to charge for
 ## Quickstart
 
 ```sh
-npx github:addisonj/pricesim init my-model --example   # or, from a clone of this repo: pnpm cli init …
+npx pricesim init my-model --example
 cd my-model
 pnpm install
 pnpm exec pricesim eval model.ts    # cost tree, pools, revenue and margin
@@ -21,7 +21,7 @@ pnpm report                         # price, cost and margin by customer size, a
 
 `init` without `--example` writes a minimal skeleton instead. The worked example models an event-ingestion service (ALB → pods on a shared Kubernetes cluster → a replicated storage tier on EC2 → S3) with a price book and a simulated customer base. Inside this repo it's `pnpm cli eval templates/example/model.ts` and `pnpm example`. [`docs/guide.md`](docs/guide.md) is a second, step-by-step example with its output explained.
 
-To add pricesim to an existing project: `pnpm add github:addisonj/pricesim#v0.1.0` (plus `typescript`, `tsx`, `@types/node`).
+To add pricesim to an existing project: `pnpm add pricesim` (plus `typescript` and `@types/node` for type checking). The latest unreleased code is `github:addisonj/pricesim#main`.
 
 ## Documentation lives in the CLI
 
@@ -79,7 +79,7 @@ pnpm gen:dim        # regenerate type-level exponent tables (src/core/dim-tables
 pnpm gen:aws        # refetch AWS prices and instance specs into src/catalog/aws/*.gen.ts (review the diff)
 ```
 
-Requires Node ≥ 22 and pnpm. pricesim ships TypeScript sources; run models with `tsx` (the CLI does).
+Requires Node ≥ 22 and pnpm. The npm package is compiled JavaScript; the repo runs from the TypeScript sources with tsx.
 
 - **CI** (`.github/workflows/ci.yml`) runs `pnpm check` on Node 22 and 24, smoke-tests the CLI, runs `pricesim init --example` against the checkout and evaluates it, and checks `docs/api.md` is current.
 - **Result schema:** `pricesim eval --json` output is specified by [`schema/result.schema.json`](schema/result.schema.json) (JSON Schema 2020-12, version 1).
@@ -98,7 +98,10 @@ pnpm unlink pricesim             # back to the pinned version
 
 ### Releases
 
-`pnpm release:patch` (or `release:minor`) runs the checks, bumps `package.json`, tags `vX.Y.Z` and pushes. The tag triggers `.github/workflows/release.yml`, which checks again and creates a GitHub release with generated notes. Models pin a release with `github:addisonj/pricesim#vX.Y.Z`; there is no npm package (yet).
+`pnpm release:patch` (or `release:minor`) runs the checks, bumps `package.json`, tags `vX.Y.Z` and pushes; the tag triggers `.github/workflows/release.yml`, which checks again and creates a GitHub release. Then `pnpm publish` puts it on npm.
+
+- **Publish with pnpm, not npm:** the repo's `exports` and `bin` point at the TypeScript sources (so the repo, `pnpm link` and git dependencies need no build), and `publishConfig` swaps in the compiled `dist/` when pnpm packs. `prepublishOnly` runs the checks and `pnpm build`.
+- The compiled CLI runs on plain Node and loads TypeScript model files with tsx's loader. CI packs the tarball, installs it with npm and runs the example.
 
 ## Layout
 
